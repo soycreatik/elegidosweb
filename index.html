@@ -173,11 +173,16 @@
             box-shadow: 0 15px 40px rgba(213, 199, 163, 0.4);
         }
 
-        .strip-preview-img {
-            width: 100%;
-            height: auto;
-            display: block;
-            pointer-events: none;
+        /* Capa superpuesta para el efecto de desenfoque */
+        .blur-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            filter: blur(8px);
+            -webkit-mask-image: radial-gradient(ellipse at center, transparent 35%, black 80%);
+            pointer-events: none; /* Permite clics a través del canvas */
+            display: none;
+            z-index: 10;
         }
 
         .qr-section {
@@ -302,6 +307,11 @@
         .btn-outline:hover {
             background: rgba(227, 218, 201, 0.1);
         }
+        .btn-outline.active-blur {
+            background: var(--accent-color);
+            color: #000;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -332,8 +342,7 @@
                     </button>
                     
                     <button class="btn-outline" onclick="window.open('https://elegidosori.vercel.app/', '_blank')" style="width: auto; padding: 14px 30px;">
-                        Sitio Web Oficial
-                        <span>ELEGIDOS - Plataforma Creativa</span>
+                        Visita el sitio web
                     </button>
                 </div>
             </div>
@@ -343,35 +352,48 @@
                     
                     <div class="strip-wrapper">
                         <div class="strip-box" id="strip-box" title="Toca una foto para repetirla">
-                            <img id="strip-image" class="strip-preview-img" src="" alt="Tira 600x1560 px">
-                            <canvas id="canvas-fallback" style="width: 100%; height: auto; display: none;"></canvas>
+                            <canvas id="canvas-display" width="600" height="1560" style="width: 100%; height: auto; display: block; z-index: 1;"></canvas>
+                            
+                            <img id="strip-image-static" src="" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 5;">
+                            
+                            <canvas id="canvas-display-blur" class="blur-overlay" width="600" height="1560"></canvas>
                         </div>
                         <p style="font-size: 0.9rem; color: var(--accent-color); font-weight: 700; margin: 0; text-shadow: 0 0 10px rgba(213, 199, 163, 0.4);">👆 Toca una foto para repetirla</p>
                     </div>
                     
                     <div class="qr-section">
-                        <h3 style="color: var(--accent-color); text-align:center; margin-bottom: 5px;">¡Tus fotos están listas!</h3>
+                        <h3 style="color: var(--accent-color); text-align:center; margin-bottom: 5px;">¡Tu secuencia está lista!</h3>
+                        
+                        <p style="font-size: 0.85rem; color: var(--text-muted); text-align:center; margin-top: -5px; margin-bottom: 5px;">
+                            Intentos de retoma: <strong id="contador-intentos-text" style="color: var(--accent-color); font-size: 1.1rem;">0</strong>
+                        </p>
+
+                        <div style="width: 100%; border-top: 1px dashed rgba(227, 218, 201, 0.2); padding: 12px 0 0 0; margin-top: 5px;">
+                            <p style="font-size: 0.85rem; color: var(--text-muted); text-align:center; margin-bottom: 8px;">1. Formato de visualización:</p>
+                            <div style="display: flex; gap: 8px; justify-content: space-between; width: 100%;">
+                                <button id="btn-modo-gif" class="design-btn active" onclick="setModoVisualizacion('gif')">🎬 Animado</button>
+                                <button id="btn-modo-foto" class="design-btn" onclick="setModoVisualizacion('foto')">📸 Estático</button>
+                            </div>
+                        </div>
                         
                         <div style="width: 100%; border-top: 1px dashed rgba(227, 218, 201, 0.2); border-bottom: 1px dashed rgba(227, 218, 201, 0.2); padding: 12px 0;">
-                            <p style="font-size: 0.85rem; color: var(--text-muted); text-align:center; margin-bottom: 8px;">Selecciona un marco decorativo:</p>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); text-align:center; margin-bottom: 8px;">2. Selecciona un marco decorativo:</p>
                             <div style="display: flex; gap: 8px; justify-content: space-between; width: 100%;">
                                 <button id="btn-diseno-0" class="design-btn active" onclick="cambiarDiseno(0)">Diseño 1</button>
                                 <button id="btn-diseno-1" class="design-btn" onclick="cambiarDiseno(1)">Diseño 2</button>
                                 <button id="btn-diseno-2" class="design-btn" onclick="cambiarDiseno(2)">Diseño 3</button>
                             </div>
                         </div>
+
+                        <button id="btn-blur" class="btn-outline" onclick="toggleBlurFondo()" style="padding: 10px; font-size: 0.85rem; flex-direction: row; gap: 5px; width: 100%;">
+                            ✨ Activar Desenfoque de Fondo
+                        </button>
                         
-                        <div id="qrcode"></div>
+                        <div id="qrcode" style="margin-top: 10px;"></div>
                         <p style="font-size: 0.8rem; color: var(--text-muted); text-align:center; margin-top: -5px;">Escanea el QR para visitar nuestro sitio web</p>
                         
-                        <div class="instructions-box">
-                            <p>📱 <b>En celular:</b> Mantén presionada la fotografía de la izquierda y selecciona "Descargar imagen".</p>
-                            <p>💻 <b>En PC:</b> Haz clic derecho sobre la fotografía y selecciona "Guardar imagen como...".</p>
-                        </div>
-                        
                         <button class="btn-glow" onclick="window.open('https://elegidosori.vercel.app/', '_blank')">
-                            Sitio Web Oficial
-                            <span>ELEGIDOS - Plataforma Creativa</span>
+                            Visita el sitio web
                         </button>
                         
                         <button class="btn-outline" onclick="reiniciarTotem()">
@@ -407,11 +429,21 @@
         const statusText = document.getElementById('status-text');
         const gridGuide = document.getElementById('grid-guide'); 
         
-        let frames = []; 
+        let frames = []; // Ahora guarda [rafaga1, rafaga2, rafaga3]
         let stream = null;
         let audioCtx; 
+        let intentosGrupo = 0;
 
-        // Medidas base del diseño (necesarias para el clic y el dibujado)
+        // Variables de Animación y Estado
+        let animId = null;
+        let playbackIndex = 0;
+        let lastDrawTime = 0;
+        const FPS_INTERVAL = 150; // Velocidad del GIF
+
+        let blurActive = false;
+        let isAnimated = true; // Variable para controlar si es GIF o Foto estática
+
+        // Medidas base del diseño
         const STRIP_W = 600;
         const STRIP_H = 1560;
         const PHOTO_W = 560;
@@ -431,14 +463,12 @@
         // LÓGICA DE RETOMA DE FOTO (RETAKE)
         // ==========================================
         document.getElementById('strip-box').addEventListener('click', function(e) {
-            if (frames.length < 3) return; // Si no hay fotos, no hacer nada
+            if (frames.length < 3) return; 
 
-            // Calcular en qué parte de la imagen se hizo clic relativo a 1560px
             const rect = this.getBoundingClientRect();
             const scaleY = STRIP_H / rect.height; 
             const clickY = (e.clientY - rect.top) * scaleY;
 
-            // Determinar qué foto se tocó
             for (let i = 0; i < 3; i++) {
                 if (clickY >= yPositions[i] && clickY <= yPositions[i] + PHOTO_H) {
                     iniciarRetake(i);
@@ -448,30 +478,59 @@
         });
 
         async function iniciarRetake(index) {
-            // Cambiar a pantalla de cámara
+            if (animId) cancelAnimationFrame(animId); // Pausar animación actual
+
             document.getElementById('sec-result').style.display = 'none';
             document.getElementById('sec-camera').style.display = 'flex';
             document.getElementById('btn-start').parentElement.style.display = 'none';
+            
+            // Sumar intento
+            intentosGrupo++;
+            actualizarContadorUI();
             
             statusText.innerHTML = `<span style="color:var(--accent-color)">Retomando foto ${index + 1}...</span> ¡Prepárate!`;
             gridGuide.style.opacity = '1';
 
             await hacerCuentaRegresiva();
-            
-            // Capturar el nuevo frame y reemplazarlo en el array
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = video.videoWidth || 1280;
-            tempCanvas.height = video.videoHeight || 960;
-            const tCtx = tempCanvas.getContext('2d');
-            
-            tCtx.translate(tempCanvas.width, 0);
-            tCtx.scale(-1, 1);
-            tCtx.drawImage(video, 0, 0);
-            
-            frames[index] = tempCanvas; // Reemplazo exacto
+            const rafaga = await capturarRafaga();
+            frames[index] = rafaga; 
 
             gridGuide.style.opacity = '0';
-            armarTiraFinal(); // Regresa a resultados con la nueva foto
+            
+            // Reiniciar estado y reanudar visualización
+            setModoVisualizacion('gif');
+            iniciarAnimacionTira();
+            mostrarPantallaResultados();
+        }
+
+        function actualizarContadorUI() {
+            document.getElementById('contador-intentos-text').innerText = intentosGrupo;
+        }
+
+        // ==========================================
+        // FUNCIONES DE CONTROL DE MODO (GIF / FOTO)
+        // ==========================================
+        function setModoVisualizacion(modo) {
+            isAnimated = (modo === 'gif');
+            
+            // Actualizar apariencia de los botones
+            document.getElementById('btn-modo-gif').classList.toggle('active', isAnimated);
+            document.getElementById('btn-modo-foto').classList.toggle('active', !isAnimated);
+            
+            const imgStatic = document.getElementById('strip-image-static');
+            
+            if (!isAnimated) {
+                // Modo Foto Estática: Pausar en el mejor frame (índice 0)
+                armarTiraFrameEstatico(0);
+                actualizarCanvasDisplays();
+                
+                // Generar la imagen para que sea fácil descargar en celular manteniendo pulsado
+                imgStatic.src = canvasMain.toDataURL('image/jpeg', 1.0);
+                imgStatic.style.display = 'block';
+            } else {
+                // Modo GIF
+                imgStatic.style.display = 'none';
+            }
         }
 
         // ==========================================
@@ -504,7 +563,6 @@
             }, 1500);
         }
 
-        // Generador de sonidos cortos (Beeps)
         function playBeep(frequency, duration) {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -542,18 +600,23 @@
         async function iniciarSesion() {
             document.getElementById('btn-start').parentElement.style.display = 'none';
             frames = [];
+            intentosGrupo = 0;
+            actualizarContadorUI();
             cambiarDiseno(0, false); 
+            setModoVisualizacion('gif'); // Por defecto iniciar como GIF
             
             gridGuide.style.opacity = '1';
             
             for (let i = 1; i <= 3; i++) {
                 statusText.innerText = `Foto ${i} de 3...`;
                 await hacerCuentaRegresiva();
-                capturarFrame();
+                const rafaga = await capturarRafaga();
+                frames.push(rafaga);
             }
 
             gridGuide.style.opacity = '0';
-            armarTiraFinal();
+            iniciarAnimacionTira();
+            mostrarPantallaResultados();
         }
 
         function hacerCuentaRegresiva() {
@@ -566,7 +629,6 @@
                     countdownEl.classList.remove('pulse-anim');
                     void countdownEl.offsetWidth; 
                     countdownEl.classList.add('pulse-anim');
-                    
                     playBeep(440, 0.15); 
                 };
 
@@ -579,9 +641,9 @@
                     } else {
                         clearInterval(intervalo);
                         countdownEl.style.opacity = '0';
-                        
                         playBeep(880, 0.3); 
                         
+                        // Efecto Flash
                         document.querySelector('.camera-wrapper').style.background = '#fff';
                         video.style.opacity = '0.2';
                         setTimeout(() => {
@@ -594,17 +656,31 @@
             });
         }
 
-        function capturarFrame() {
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = video.videoWidth || 1280;
-            tempCanvas.height = video.videoHeight || 960;
-            const tCtx = tempCanvas.getContext('2d');
-            
-            tCtx.translate(tempCanvas.width, 0);
-            tCtx.scale(-1, 1);
-            tCtx.drawImage(video, 0, 0);
-            
-            frames.push(tempCanvas);
+        // CAPTURA UNA RÁFAGA DE 6 FRAMES EN LUGAR DE UNA SOLA FOTO (EFECTO GIF)
+        async function capturarRafaga() {
+            return new Promise((resolve) => {
+                let rafagaLocal = [];
+                let contadorRafaga = 0;
+                
+                const intervaloRafaga = setInterval(() => {
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = video.videoWidth || 1280;
+                    tempCanvas.height = video.videoHeight || 960;
+                    const tCtx = tempCanvas.getContext('2d');
+                    
+                    tCtx.translate(tempCanvas.width, 0);
+                    tCtx.scale(-1, 1);
+                    tCtx.drawImage(video, 0, 0);
+                    
+                    rafagaLocal.push(tempCanvas);
+                    contadorRafaga++;
+                    
+                    if (contadorRafaga >= 6) { // 6 frames por cada pose
+                        clearInterval(intervaloRafaga);
+                        resolve(rafagaLocal);
+                    }
+                }, 120); 
+            });
         }
 
         function cambiarDiseno(index, reRender = true) {
@@ -614,12 +690,71 @@
             document.getElementById('btn-diseno-2').classList.remove('active');
             document.getElementById(`btn-diseno-${index}`).classList.add('active');
 
-            if (reRender && frames.length === 3) {
-                armarTiraFinal();
+            // Si está en modo foto estática, forzar la actualización para mostrar el nuevo diseño de inmediato
+            if (reRender && frames.length === 3 && !isAnimated) {
+                setModoVisualizacion('foto');
             }
         }
 
-        function armarTiraFinal() {
+        function toggleBlurFondo() {
+            blurActive = !blurActive;
+            const blurCanvas = document.getElementById('canvas-display-blur');
+            const btn = document.getElementById('btn-blur');
+            
+            if (blurActive) {
+                blurCanvas.style.display = 'block';
+                btn.classList.add('active-blur');
+                btn.innerHTML = "✨ Desenfocar Fondo (Activo)";
+            } else {
+                blurCanvas.style.display = 'none';
+                btn.classList.remove('active-blur');
+                btn.innerHTML = "✨ Activar Desenfoque de Fondo";
+            }
+            
+            // Refrescar inmediatamente si estamos en modo foto
+            if (frames.length === 3 && !isAnimated) {
+                setModoVisualizacion('foto');
+            }
+        }
+
+        // ==========================================
+        // MOTOR DE ANIMACIÓN DEL CANVAS
+        // ==========================================
+        function iniciarAnimacionTira() {
+            if (animId) cancelAnimationFrame(animId);
+            playbackIndex = 0;
+            animId = requestAnimationFrame(loopAnimacion);
+        }
+
+        function loopAnimacion(timestamp) {
+            // Solo redibujar y animar si estamos en modo GIF
+            if (isAnimated) {
+                if (timestamp - lastDrawTime > FPS_INTERVAL) {
+                    lastDrawTime = timestamp;
+                    armarTiraFrameEstatico(playbackIndex);
+                    actualizarCanvasDisplays();
+                    playbackIndex++;
+                }
+            }
+            // Mantenemos el ciclo activo para poder reanudar rápido si tocan "Modo GIF" de nuevo
+            animId = requestAnimationFrame(loopAnimacion);
+        }
+
+        // Transfiere el buffer principal a los Canvas Visibles (Normal y Blur)
+        function actualizarCanvasDisplays() {
+            const cDisp = document.getElementById('canvas-display');
+            const cBlur = document.getElementById('canvas-display-blur');
+            
+            cDisp.getContext('2d').clearRect(0, 0, STRIP_W, STRIP_H);
+            cDisp.getContext('2d').drawImage(canvasMain, 0, 0);
+            
+            if (blurActive) {
+                cBlur.getContext('2d').clearRect(0, 0, STRIP_W, STRIP_H);
+                cBlur.getContext('2d').drawImage(canvasMain, 0, 0);
+            }
+        }
+
+        function armarTiraFrameEstatico(frameIdx) {
             canvasMain.width = STRIP_W;
             canvasMain.height = STRIP_H;
 
@@ -636,10 +771,11 @@
                 ctx.fillRect(0, 0, STRIP_W, STRIP_H);
             }
 
-            frames.forEach((frame, index) => {
-                if (index < 3) {
+            frames.forEach((rafaga, index) => {
+                if (index < 3 && rafaga && rafaga.length > 0) {
                     const photoY = yPositions[index];
-                    dibujarFotoCover(frame, PHOTO_X, photoY, PHOTO_W, PHOTO_H, CORNER_RADIUS);
+                    const frameActual = rafaga[frameIdx % rafaga.length];
+                    dibujarFotoCover(frameActual, PHOTO_X, photoY, PHOTO_W, PHOTO_H, CORNER_RADIUS);
                 }
             });
 
@@ -655,8 +791,6 @@
             ctx.letterSpacing = "2px";
             ctx.fillText(estampaTexto, STRIP_W / 2, STRIP_H - 45);
             ctx.restore();
-
-            mostrarPantallaResultados();
         }
 
         function dibujarFotoCover(img, dx, dy, dw, dh, radius) {
@@ -700,42 +834,25 @@
             document.getElementById('sec-camera').style.display = 'none';
             document.getElementById('sec-result').style.display = 'flex';
 
-            const imgElement = document.getElementById('strip-image');
-            const canvasFallback = document.getElementById('canvas-fallback');
-            
-            try {
-                const imgDataUrl = canvasMain.toDataURL('image/png', 1.0);
-                imgElement.src = imgDataUrl;
-                imgElement.style.display = 'block';
-                canvasFallback.style.display = 'none';
-
-            } catch (error) {
-                canvasFallback.width = canvasMain.width;
-                canvasFallback.height = canvasMain.height;
-                const fCtx = canvasFallback.getContext('2d');
-                fCtx.drawImage(canvasMain, 0, 0);
-
-                imgElement.style.display = 'none';
-                canvasFallback.style.display = 'block';
-            }
-
             const qrContainer = document.getElementById('qrcode');
-            qrContainer.innerHTML = "";
-            try {
-                new QRCode(qrContainer, {
-                    text: OFFICIAL_WEBSITE_URL,
-                    width: 130,
-                    height: 130,
-                    colorDark : "#000000",
-                    colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.H
-                });
-            } catch(e) {
-                console.error("Error al generar el QR", e);
+            if (qrContainer.innerHTML === "") {
+                try {
+                    new QRCode(qrContainer, {
+                        text: OFFICIAL_WEBSITE_URL,
+                        width: 130,
+                        height: 130,
+                        colorDark : "#000000",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.H
+                    });
+                } catch(e) {
+                    console.error("Error al generar el QR", e);
+                }
             }
         }
 
         function reiniciarTotem() {
+            if (animId) cancelAnimationFrame(animId);
             document.getElementById('sec-result').style.display = 'none';
             document.getElementById('sec-camera').style.display = 'flex';
             document.getElementById('btn-start').parentElement.style.display = 'flex';
