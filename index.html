@@ -157,12 +157,18 @@
             padding: 30px;
             border-radius: 18px;
             border: 1px solid rgba(227, 218, 201, 0.15);
+            max-width: 280px;
         }
 
         #qrcode {
             background: #fff;
             padding: 12px;
             border-radius: 10px;
+            min-width: 150px;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .btn-glow {
@@ -232,15 +238,16 @@
                     </div>
                     
                     <div class="qr-section">
-                        <h3 style="color: var(--accent-color);">¡Tus fotos están listas!</h3>
-                        <p style="font-size: 0.85rem; color: var(--text-muted);">Escanea para acceder a la carpeta</p>
+                        <h3 style="color: var(--accent-color); text-align:center;">¡Tus fotos están listas!</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); text-align:center;">Escanea el QR para ir a la carpeta de Drive</p>
+                        
                         <div id="qrcode"></div>
                         
-                        <a id="btn-download" download="Elegidos_PhotoBooth.png" class="btn-glow" style="text-decoration: none;">
-                            Descargar Imagen
-                        </a>
+                        <button id="btn-download" class="btn-glow" style="font-size: 1rem; padding: 12px 20px; width: 100%;">
+                            Guardar Imagen
+                        </button>
                         
-                        <button class="btn-outline" onclick="reiniciarTotem()">Tomar otras fotos</button>
+                        <button class="btn-outline" onclick="reiniciarTotem()" style="width: 100%;">Tomar otras fotos</button>
                     </div>
 
                 </div>
@@ -252,6 +259,8 @@
     <canvas id="canvas-main" width="600" height="1560" style="display: none;"></canvas>
 
     <script>
+        const DRIVE_FOLDER_URL = "https://drive.google.com/drive/folders/1su6yy6-YtZwOpf_g2-QBBZI9P8kJnSXN?usp=sharing";
+        
         const frameOverlay = new Image();
         frameOverlay.src = "elegidosfotodis.png"; 
 
@@ -267,7 +276,7 @@
         async function iniciarCamara() {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { width: { ideal: 1280 }, height: { ideal: 960 } } 
+                    video: { width: { ideal: 1280 }, height: { ideal: 960 }, facingMode: "user" } 
                 });
                 video.srcObject = stream;
             } catch (err) {
@@ -337,15 +346,13 @@
             const PHOTO_X = 20; 
             const CORNER_RADIUS = 16; 
 
-            // --- ALINEACIÓN VERTICAL ---
-            // Ajustado a 155px (+35px adicionales solicitados)
             const TOP_MARGIN = 155; 
-            const SPACING = 35;    // Separación entre fotos
+            const SPACING = 35;    
 
             const yPositions = [
-                TOP_MARGIN,                             // Foto 1: Y = 155px
-                TOP_MARGIN + PHOTO_H + SPACING,          // Foto 2: Y = 540px
-                TOP_MARGIN + (PHOTO_H + SPACING) * 2     // Foto 3: Y = 925px
+                TOP_MARGIN,                             
+                TOP_MARGIN + PHOTO_H + SPACING,          
+                TOP_MARGIN + (PHOTO_H + SPACING) * 2     
             ];
 
             canvasMain.width = STRIP_W;
@@ -355,7 +362,6 @@
             ctx.imageSmoothingQuality = 'high';
             ctx.clearRect(0, 0, STRIP_W, STRIP_H);
 
-            // 1. DIBUJAR MARCO O FONDO
             if (frameOverlay.complete && frameOverlay.naturalWidth > 0) {
                 ctx.drawImage(frameOverlay, 0, 0, STRIP_W, STRIP_H);
             } else {
@@ -363,7 +369,6 @@
                 ctx.fillRect(0, 0, STRIP_W, STRIP_H);
             }
 
-            // 2. DIBUJAR LAS 3 FOTOS
             frames.forEach((frame, index) => {
                 if (index < 3) {
                     const photoY = yPositions[index];
@@ -378,7 +383,7 @@
             const imgW = img.width;
             const imgH = img.height;
             
-            const targetRatio = dw / dh; // 560 / 350 = 1.6
+            const targetRatio = dw / dh; 
             const imgRatio = imgW / imgH;
             
             let sx, sy, sw, sh;
@@ -415,19 +420,35 @@
             ctx.restore();
         }
 
+        function descargarFotoDirectamente() {
+            const link = document.createElement('a');
+            link.download = `foto_elegidos_${Date.now()}.png`;
+            link.href = canvasMain.toDataURL('image/png', 1.0);
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         function mostrarPantallaResultados() {
             document.getElementById('sec-camera').style.display = 'none';
             document.getElementById('sec-result').style.display = 'flex';
 
             const imgElement = document.getElementById('strip-image');
             const canvasFallback = document.getElementById('canvas-fallback');
-
+            
             try {
-                const imgData = canvasMain.toDataURL('image/png', 1.0);
-                imgElement.src = imgData;
+                const imgDataUrl = canvasMain.toDataURL('image/png', 1.0);
+                imgElement.src = imgDataUrl;
                 imgElement.style.display = 'block';
                 canvasFallback.style.display = 'none';
-                document.getElementById('btn-download').href = imgData;
+                
+                const btnDownload = document.getElementById('btn-download');
+                btnDownload.onclick = function(e) {
+                    e.preventDefault();
+                    descargarFotoDirectamente();
+                };
+
             } catch (error) {
                 canvasFallback.width = canvasMain.width;
                 canvasFallback.height = canvasMain.height;
@@ -436,23 +457,24 @@
 
                 imgElement.style.display = 'none';
                 canvasFallback.style.display = 'block';
-
-                const btnDl = document.getElementById('btn-download');
-                btnDl.innerText = "Clic derecho > Guardar como";
-                btnDl.style.fontSize = "0.85rem";
             }
 
+            // Generación del Código QR apuntando a la carpeta de Google Drive
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = "";
+
             try {
-                document.getElementById('qrcode').innerHTML = ""; 
-                new QRCode(document.getElementById("qrcode"), {
-                    text: "https://drive.google.com/drive/folders/1bYgIZadCZKVpcoVIT1Pi_gDtv9Jka49m?usp=sharing",
+                new QRCode(qrContainer, {
+                    text: DRIVE_FOLDER_URL,
                     width: 140,
                     height: 140,
                     colorDark : "#000000",
                     colorLight : "#ffffff",
                     correctLevel : QRCode.CorrectLevel.H
                 });
-            } catch(e) {}
+            } catch(e) {
+                console.error("Error al generar el QR", e);
+            }
         }
 
         function reiniciarTotem() {
