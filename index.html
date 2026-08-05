@@ -57,7 +57,6 @@
             justify-content: center;
         }
 
-        /* Todas las letras inician con la misma fuente sólida y tienen una transición suave */
         .mixed-title span { 
             display: inline-block; 
             font-family: 'Inter', sans-serif;
@@ -112,13 +111,33 @@
             transform: scaleX(-1);
         }
 
+        /* --- GUÍA DE COMPOSICIÓN (REGLA DE TERCIOS) --- */
+        .grid-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            background-image: 
+                linear-gradient(to right, transparent 33.33%, rgba(255,255,255,0.3) 33.33%, rgba(255,255,255,0.3) 33.6%, transparent 33.6%, transparent 66.66%, rgba(255,255,255,0.3) 66.66%, rgba(255,255,255,0.3) 66.9%, transparent 66.9%),
+                linear-gradient(to bottom, transparent 33.33%, rgba(255,255,255,0.3) 33.33%, rgba(255,255,255,0.3) 33.6%, transparent 33.6%, transparent 66.66%, rgba(255,255,255,0.3) 66.66%, rgba(255,255,255,0.3) 66.9%, transparent 66.9%);
+            z-index: 2;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
         .countdown-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center;
-            font-size: 8rem; font-weight: 900; font-family: 'Bebas Neue', sans-serif;
-            color: #fff; text-shadow: 0 0 20px var(--accent-color);
+            font-size: 10rem; font-weight: 900; font-family: 'Bebas Neue', sans-serif;
+            color: #fff; text-shadow: 0 0 30px var(--accent-color);
             opacity: 0; pointer-events: none; transition: opacity 0.2s;
+            z-index: 3;
         }
+
+        @keyframes pulseCount {
+            0% { transform: scale(1); color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.5); }
+            50% { transform: scale(1.2); color: var(--accent-color); text-shadow: 0 0 40px var(--accent-color); }
+            100% { transform: scale(1); color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.5); }
+        }
+        .pulse-anim { animation: pulseCount 0.8s ease-out; }
 
         .results-container {
             display: flex;
@@ -127,6 +146,13 @@
             justify-content: center;
             align-items: center;
             width: 100%;
+        }
+
+        .strip-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
         }
 
         .strip-box {
@@ -138,12 +164,20 @@
             box-shadow: 0 15px 35px rgba(0,0,0,0.8);
             border: 1px solid rgba(255,255,255,0.15);
             background: #000;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .strip-box:hover {
+            transform: scale(1.02);
+            box-shadow: 0 15px 40px rgba(213, 199, 163, 0.4);
         }
 
         .strip-preview-img {
             width: 100%;
             height: auto;
             display: block;
+            pointer-events: none;
         }
 
         .qr-section {
@@ -163,12 +197,13 @@
             background: transparent;
             color: var(--text-muted);
             border: 1px solid rgba(227, 218, 201, 0.3);
-            padding: 8px 15px;
+            padding: 8px 12px;
             border-radius: 8px;
             font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.3s;
             font-family: 'Inter', sans-serif;
+            flex: 1;
         }
         .design-btn.active {
             background: var(--accent-color);
@@ -286,6 +321,7 @@
             <div id="sec-camera" class="section" style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
                 <div class="camera-wrapper">
                     <video id="video" autoplay playsinline></video>
+                    <div id="grid-guide" class="grid-overlay"></div>
                     <div id="countdown" class="countdown-overlay">3</div>
                 </div>
                 <h3 id="status-text" style="font-weight: 400;">Ponte listo, son 3 fotos seguidas</h3>
@@ -305,9 +341,12 @@
             <div id="sec-result" class="section">
                 <div class="results-container">
                     
-                    <div class="strip-box" id="strip-box">
-                        <img id="strip-image" class="strip-preview-img" src="" alt="Tira 600x1560 px">
-                        <canvas id="canvas-fallback" style="width: 100%; height: auto; display: none;"></canvas>
+                    <div class="strip-wrapper">
+                        <div class="strip-box" id="strip-box" title="Toca una foto para repetirla">
+                            <img id="strip-image" class="strip-preview-img" src="" alt="Tira 600x1560 px">
+                            <canvas id="canvas-fallback" style="width: 100%; height: auto; display: none;"></canvas>
+                        </div>
+                        <p style="font-size: 0.9rem; color: var(--accent-color); font-weight: 700; margin: 0; text-shadow: 0 0 10px rgba(213, 199, 163, 0.4);">👆 Toca una foto para repetirla</p>
                     </div>
                     
                     <div class="qr-section">
@@ -315,9 +354,10 @@
                         
                         <div style="width: 100%; border-top: 1px dashed rgba(227, 218, 201, 0.2); border-bottom: 1px dashed rgba(227, 218, 201, 0.2); padding: 12px 0;">
                             <p style="font-size: 0.85rem; color: var(--text-muted); text-align:center; margin-bottom: 8px;">Selecciona un marco decorativo:</p>
-                            <div style="display: flex; gap: 10px; justify-content: center;">
+                            <div style="display: flex; gap: 8px; justify-content: space-between; width: 100%;">
                                 <button id="btn-diseno-0" class="design-btn active" onclick="cambiarDiseno(0)">Diseño 1</button>
                                 <button id="btn-diseno-1" class="design-btn" onclick="cambiarDiseno(1)">Diseño 2</button>
+                                <button id="btn-diseno-2" class="design-btn" onclick="cambiarDiseno(2)">Diseño 3</button>
                             </div>
                         </div>
                         
@@ -335,7 +375,7 @@
                         </button>
                         
                         <button class="btn-outline" onclick="reiniciarTotem()">
-                            Tomar otras fotos
+                            Tomar nuevas fotos
                         </button>
                     </div>
 
@@ -349,28 +389,93 @@
 
     <script>
         const OFFICIAL_WEBSITE_URL = "https://elegidosori.vercel.app/";
-        const DRIVE_FOLDER_URL = "https://drive.google.com/drive/folders/1su6yy6-YtZwOpf_g2-QBBZI9P8kJnSXN?usp=sharing";
         
         // ==========================================
-        // CARGA DE MÚLTIPLES MARCOS/DISEÑOS
+        // CARGA DE 3 DISEÑOS
         // ==========================================
-        const bgDesigns = [new Image(), new Image()];
-        bgDesigns[0].src = "elegidosfotodis.png";   // Diseño 1
-        bgDesigns[1].src = "elegidosfotodis1.png";  // Diseño 2
+        const bgDesigns = [new Image(), new Image(), new Image()];
+        bgDesigns[0].src = "elegidosfotodis.png";   
+        bgDesigns[1].src = "elegidosfotodis1.png";  
+        bgDesigns[2].src = "elegidosfotodis2.png";  
         
-        let currentDesignIndex = 0; // Índice del diseño actual seleccionado
+        let currentDesignIndex = 0; 
         
         const video = document.getElementById('video');
         const canvasMain = document.getElementById('canvas-main');
         const ctx = canvasMain.getContext('2d');
         const countdownEl = document.getElementById('countdown');
         const statusText = document.getElementById('status-text');
+        const gridGuide = document.getElementById('grid-guide'); 
         
-        let frames = []; // Aquí se guardan las 3 fotos capturadas
+        let frames = []; 
         let stream = null;
+        let audioCtx; 
+
+        // Medidas base del diseño (necesarias para el clic y el dibujado)
+        const STRIP_W = 600;
+        const STRIP_H = 1560;
+        const PHOTO_W = 560;
+        const PHOTO_H = 350; 
+        const PHOTO_X = 20; 
+        const CORNER_RADIUS = 16; 
+        const TOP_MARGIN = 155; 
+        const SPACING = 35;    
+
+        const yPositions = [
+            TOP_MARGIN,                             
+            TOP_MARGIN + PHOTO_H + SPACING,          
+            TOP_MARGIN + (PHOTO_H + SPACING) * 2     
+        ];
 
         // ==========================================
-        // ANIMACIÓN DE LAS LETRAS (Efecto Elegante)
+        // LÓGICA DE RETOMA DE FOTO (RETAKE)
+        // ==========================================
+        document.getElementById('strip-box').addEventListener('click', function(e) {
+            if (frames.length < 3) return; // Si no hay fotos, no hacer nada
+
+            // Calcular en qué parte de la imagen se hizo clic relativo a 1560px
+            const rect = this.getBoundingClientRect();
+            const scaleY = STRIP_H / rect.height; 
+            const clickY = (e.clientY - rect.top) * scaleY;
+
+            // Determinar qué foto se tocó
+            for (let i = 0; i < 3; i++) {
+                if (clickY >= yPositions[i] && clickY <= yPositions[i] + PHOTO_H) {
+                    iniciarRetake(i);
+                    break;
+                }
+            }
+        });
+
+        async function iniciarRetake(index) {
+            // Cambiar a pantalla de cámara
+            document.getElementById('sec-result').style.display = 'none';
+            document.getElementById('sec-camera').style.display = 'flex';
+            document.getElementById('btn-start').parentElement.style.display = 'none';
+            
+            statusText.innerHTML = `<span style="color:var(--accent-color)">Retomando foto ${index + 1}...</span> ¡Prepárate!`;
+            gridGuide.style.opacity = '1';
+
+            await hacerCuentaRegresiva();
+            
+            // Capturar el nuevo frame y reemplazarlo en el array
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = video.videoWidth || 1280;
+            tempCanvas.height = video.videoHeight || 960;
+            const tCtx = tempCanvas.getContext('2d');
+            
+            tCtx.translate(tempCanvas.width, 0);
+            tCtx.scale(-1, 1);
+            tCtx.drawImage(video, 0, 0);
+            
+            frames[index] = tempCanvas; // Reemplazo exacto
+
+            gridGuide.style.opacity = '0';
+            armarTiraFinal(); // Regresa a resultados con la nueva foto
+        }
+
+        // ==========================================
+        // ANIMACIÓN DE LETRAS
         // ==========================================
         function animarLetras() {
             const letters = document.querySelectorAll('.mixed-title span');
@@ -378,7 +483,6 @@
 
             setInterval(() => {
                 const numLetters = Math.floor(Math.random() * 2) + 1;
-
                 for(let i=0; i<numLetters; i++) {
                     const randomLetter = letters[Math.floor(Math.random() * letters.length)];
                     const randomFont = elegantFonts[Math.floor(Math.random() * elegantFonts.length)];
@@ -400,6 +504,25 @@
             }, 1500);
         }
 
+        // Generador de sonidos cortos (Beeps)
+        function playBeep(frequency, duration) {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = frequency;
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+            oscillator.stop(audioCtx.currentTime + duration);
+        }
+
         async function iniciarCamara() {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ 
@@ -419,9 +542,9 @@
         async function iniciarSesion() {
             document.getElementById('btn-start').parentElement.style.display = 'none';
             frames = [];
-            
-            // Al tomar fotos nuevas, podemos resetear al diseño 1 por defecto (Opcional)
             cambiarDiseno(0, false); 
+            
+            gridGuide.style.opacity = '1';
             
             for (let i = 1; i <= 3; i++) {
                 statusText.innerText = `Foto ${i} de 3...`;
@@ -429,6 +552,7 @@
                 capturarFrame();
             }
 
+            gridGuide.style.opacity = '0';
             armarTiraFinal();
         }
 
@@ -436,15 +560,28 @@
             return new Promise((resolve) => {
                 let contador = 3;
                 countdownEl.style.opacity = '1';
-                countdownEl.innerText = contador;
+                
+                const tick = (num) => {
+                    countdownEl.innerText = num;
+                    countdownEl.classList.remove('pulse-anim');
+                    void countdownEl.offsetWidth; 
+                    countdownEl.classList.add('pulse-anim');
+                    
+                    playBeep(440, 0.15); 
+                };
+
+                tick(contador);
                 
                 const intervalo = setInterval(() => {
                     contador--;
                     if (contador > 0) {
-                        countdownEl.innerText = contador;
+                        tick(contador);
                     } else {
                         clearInterval(intervalo);
                         countdownEl.style.opacity = '0';
+                        
+                        playBeep(880, 0.3); 
+                        
                         document.querySelector('.camera-wrapper').style.background = '#fff';
                         video.style.opacity = '0.2';
                         setTimeout(() => {
@@ -470,41 +607,19 @@
             frames.push(tempCanvas);
         }
 
-        // ==========================================
-        // FUNCIÓN PARA CAMBIAR EL DISEÑO AL INSTANTE
-        // ==========================================
         function cambiarDiseno(index, reRender = true) {
             currentDesignIndex = index;
-            
-            // Actualizar apariencia de los botones
             document.getElementById('btn-diseno-0').classList.remove('active');
             document.getElementById('btn-diseno-1').classList.remove('active');
+            document.getElementById('btn-diseno-2').classList.remove('active');
             document.getElementById(`btn-diseno-${index}`).classList.add('active');
 
-            // Si ya hay fotos capturadas (frames.length === 3), re-armamos la tira
             if (reRender && frames.length === 3) {
                 armarTiraFinal();
             }
         }
 
         function armarTiraFinal() {
-            const STRIP_W = 600;
-            const STRIP_H = 1560;
-            
-            const PHOTO_W = 560;
-            const PHOTO_H = 350; 
-            const PHOTO_X = 20; 
-            const CORNER_RADIUS = 16; 
-
-            const TOP_MARGIN = 155; 
-            const SPACING = 35;    
-
-            const yPositions = [
-                TOP_MARGIN,                             
-                TOP_MARGIN + PHOTO_H + SPACING,          
-                TOP_MARGIN + (PHOTO_H + SPACING) * 2     
-            ];
-
             canvasMain.width = STRIP_W;
             canvasMain.height = STRIP_H;
 
@@ -512,7 +627,6 @@
             ctx.imageSmoothingQuality = 'high';
             ctx.clearRect(0, 0, STRIP_W, STRIP_H);
 
-            // DIBUJAMOS EL DISEÑO/MARCO SELECCIONADO
             const activeOverlay = bgDesigns[currentDesignIndex];
             
             if (activeOverlay.complete && activeOverlay.naturalWidth > 0) {
@@ -522,7 +636,6 @@
                 ctx.fillRect(0, 0, STRIP_W, STRIP_H);
             }
 
-            // DIBUJAMOS LAS FOTOS ENCIMA DEL MARCO
             frames.forEach((frame, index) => {
                 if (index < 3) {
                     const photoY = yPositions[index];
@@ -530,13 +643,25 @@
                 }
             });
 
+            // --- ESTAMPA DE FECHA Y UBICACIÓN ---
+            const meses = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+            const fechaActual = new Date();
+            const estampaTexto = `${meses[fechaActual.getMonth()]} ${fechaActual.getFullYear()} - EL SALVADOR`;
+            
+            ctx.save();
+            ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+            ctx.font = "300 18px 'Inter', sans-serif";
+            ctx.textAlign = "center";
+            ctx.letterSpacing = "2px";
+            ctx.fillText(estampaTexto, STRIP_W / 2, STRIP_H - 45);
+            ctx.restore();
+
             mostrarPantallaResultados();
         }
 
         function dibujarFotoCover(img, dx, dy, dw, dh, radius) {
             const imgW = img.width;
             const imgH = img.height;
-            
             const targetRatio = dw / dh; 
             const imgRatio = imgW / imgH;
             
@@ -555,7 +680,6 @@
             }
 
             ctx.save();
-            
             ctx.beginPath();
             if (ctx.roundRect) {
                 ctx.roundRect(dx, dy, dw, dh, radius);
@@ -568,9 +692,7 @@
             }
             ctx.closePath();
             ctx.clip();
-
             ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
-            
             ctx.restore();
         }
 
@@ -597,10 +719,8 @@
                 canvasFallback.style.display = 'block';
             }
 
-            // Generación del Código QR apuntando al sitio oficial
             const qrContainer = document.getElementById('qrcode');
             qrContainer.innerHTML = "";
-
             try {
                 new QRCode(qrContainer, {
                     text: OFFICIAL_WEBSITE_URL,
