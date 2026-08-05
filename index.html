@@ -57,15 +57,13 @@
             justify-content: center;
         }
 
-        .mixed-title span { display: inline-block; }
-        .l1 { font-family: 'Cinzel', serif; font-weight: 700; }
-        .l2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.1em; transform: translateY(-5px); }
-        .l3 { font-family: 'Playfair Display', serif; font-style: italic; }
-        .l4 { font-family: 'Inter', sans-serif; font-weight: 900; }
-        .l5 { font-family: 'Cinzel', serif; font-weight: 900; transform: translateY(5px); }
-        .l6 { font-family: 'Playfair Display', serif; font-weight: 900; }
-        .l7 { font-family: 'Inter', sans-serif; font-weight: 300; }
-        .l8 { font-family: 'Bebas Neue', sans-serif; font-size: 1.1em; }
+        /* Todas las letras inician con la misma fuente sólida y tienen una transición suave */
+        .mixed-title span { 
+            display: inline-block; 
+            font-family: 'Inter', sans-serif;
+            font-weight: 900;
+            transition: all 0.5s ease;
+        }
 
         .main-container {
             width: 100%;
@@ -154,18 +152,40 @@
             gap: 15px;
             align-items: center;
             background: rgba(0,0,0,0.5);
-            padding: 30px;
+            padding: 25px;
             border-radius: 18px;
             border: 1px solid rgba(227, 218, 201, 0.15);
             max-width: 320px;
+        }
+
+        /* ESTILOS PARA LOS BOTONES DEL SELECTOR DE DISEÑO */
+        .design-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid rgba(227, 218, 201, 0.3);
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+        .design-btn.active {
+            background: var(--accent-color);
+            color: #000;
+            border-color: var(--accent-color);
+            font-weight: bold;
+        }
+        .design-btn:hover:not(.active) {
+            background: rgba(227, 218, 201, 0.1);
         }
 
         #qrcode {
             background: #fff;
             padding: 12px;
             border-radius: 10px;
-            min-width: 150px;
-            min-height: 150px;
+            min-width: 130px;
+            min-height: 130px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -254,8 +274,8 @@
     <div class="site-bg-image"></div>
 
     <header>
-        <h1 class="mixed-title">
-            <span class="l1">E</span><span class="l2">L</span><span class="l3">E</span><span class="l4">G</span><span class="l5">I</span><span class="l6">D</span><span class="l7">O</span><span class="l8">S</span>
+        <h1 class="mixed-title" id="animated-title">
+            <span>E</span><span>L</span><span>E</span><span>G</span><span>I</span><span>D</span><span>O</span><span>S</span>
         </h1>
         <p style="color: var(--text-muted); margin-top: 5px; font-weight: 300;">PHOTO BOOTH</p>
     </header>
@@ -291,10 +311,18 @@
                     </div>
                     
                     <div class="qr-section">
-                        <h3 style="color: var(--accent-color); text-align:center;">¡Tus fotos están listas!</h3>
+                        <h3 style="color: var(--accent-color); text-align:center; margin-bottom: 5px;">¡Tus fotos están listas!</h3>
+                        
+                        <div style="width: 100%; border-top: 1px dashed rgba(227, 218, 201, 0.2); border-bottom: 1px dashed rgba(227, 218, 201, 0.2); padding: 12px 0;">
+                            <p style="font-size: 0.85rem; color: var(--text-muted); text-align:center; margin-bottom: 8px;">Selecciona un marco decorativo:</p>
+                            <div style="display: flex; gap: 10px; justify-content: center;">
+                                <button id="btn-diseno-0" class="design-btn active" onclick="cambiarDiseno(0)">Diseño 1</button>
+                                <button id="btn-diseno-1" class="design-btn" onclick="cambiarDiseno(1)">Diseño 2</button>
+                            </div>
+                        </div>
                         
                         <div id="qrcode"></div>
-                        <p style="font-size: 0.8rem; color: var(--text-muted); text-align:center; margin-top: -5px;">Escanea el QR para ir a la carpeta de Drive</p>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); text-align:center; margin-top: -5px;">Escanea el QR para visitar nuestro sitio web</p>
                         
                         <div class="instructions-box">
                             <p>📱 <b>En celular:</b> Mantén presionada la fotografía de la izquierda y selecciona "Descargar imagen".</p>
@@ -320,19 +348,57 @@
     <canvas id="canvas-main" width="600" height="1560" style="display: none;"></canvas>
 
     <script>
+        const OFFICIAL_WEBSITE_URL = "https://elegidosori.vercel.app/";
         const DRIVE_FOLDER_URL = "https://drive.google.com/drive/folders/1su6yy6-YtZwOpf_g2-QBBZI9P8kJnSXN?usp=sharing";
         
-        const frameOverlay = new Image();
-        frameOverlay.src = "elegidosfotodis.png"; 
-
+        // ==========================================
+        // CARGA DE MÚLTIPLES MARCOS/DISEÑOS
+        // ==========================================
+        const bgDesigns = [new Image(), new Image()];
+        bgDesigns[0].src = "elegidosfotodis.png";   // Diseño 1
+        bgDesigns[1].src = "elegidosfotodis1.png";  // Diseño 2
+        
+        let currentDesignIndex = 0; // Índice del diseño actual seleccionado
+        
         const video = document.getElementById('video');
         const canvasMain = document.getElementById('canvas-main');
         const ctx = canvasMain.getContext('2d');
         const countdownEl = document.getElementById('countdown');
         const statusText = document.getElementById('status-text');
         
-        let frames = [];
+        let frames = []; // Aquí se guardan las 3 fotos capturadas
         let stream = null;
+
+        // ==========================================
+        // ANIMACIÓN DE LAS LETRAS (Efecto Elegante)
+        // ==========================================
+        function animarLetras() {
+            const letters = document.querySelectorAll('.mixed-title span');
+            const elegantFonts = ['"Playfair Display", serif', '"Cinzel", serif'];
+
+            setInterval(() => {
+                const numLetters = Math.floor(Math.random() * 2) + 1;
+
+                for(let i=0; i<numLetters; i++) {
+                    const randomLetter = letters[Math.floor(Math.random() * letters.length)];
+                    const randomFont = elegantFonts[Math.floor(Math.random() * elegantFonts.length)];
+                    
+                    randomLetter.style.fontFamily = randomFont;
+                    randomLetter.style.fontStyle = randomFont.includes('Playfair') ? 'italic' : 'normal';
+                    randomLetter.style.color = 'var(--accent-color)';
+                    randomLetter.style.textShadow = '0 0 15px rgba(213, 199, 163, 0.6)';
+                    randomLetter.style.transform = 'translateY(-2px) scale(1.05)';
+
+                    setTimeout(() => {
+                        randomLetter.style.fontFamily = '"Inter", sans-serif';
+                        randomLetter.style.fontStyle = 'normal';
+                        randomLetter.style.color = 'var(--text-main)';
+                        randomLetter.style.textShadow = '0 0 20px rgba(227, 218, 201, 0.3)';
+                        randomLetter.style.transform = 'none';
+                    }, 1200);
+                }
+            }, 1500);
+        }
 
         async function iniciarCamara() {
             try {
@@ -345,12 +411,17 @@
             }
         }
 
-        window.addEventListener('load', iniciarCamara);
+        window.addEventListener('load', () => {
+            iniciarCamara();
+            animarLetras(); 
+        });
 
         async function iniciarSesion() {
-            // Ocultamos ambos botones al iniciar
             document.getElementById('btn-start').parentElement.style.display = 'none';
             frames = [];
+            
+            // Al tomar fotos nuevas, podemos resetear al diseño 1 por defecto (Opcional)
+            cambiarDiseno(0, false); 
             
             for (let i = 1; i <= 3; i++) {
                 statusText.innerText = `Foto ${i} de 3...`;
@@ -399,6 +470,23 @@
             frames.push(tempCanvas);
         }
 
+        // ==========================================
+        // FUNCIÓN PARA CAMBIAR EL DISEÑO AL INSTANTE
+        // ==========================================
+        function cambiarDiseno(index, reRender = true) {
+            currentDesignIndex = index;
+            
+            // Actualizar apariencia de los botones
+            document.getElementById('btn-diseno-0').classList.remove('active');
+            document.getElementById('btn-diseno-1').classList.remove('active');
+            document.getElementById(`btn-diseno-${index}`).classList.add('active');
+
+            // Si ya hay fotos capturadas (frames.length === 3), re-armamos la tira
+            if (reRender && frames.length === 3) {
+                armarTiraFinal();
+            }
+        }
+
         function armarTiraFinal() {
             const STRIP_W = 600;
             const STRIP_H = 1560;
@@ -424,13 +512,17 @@
             ctx.imageSmoothingQuality = 'high';
             ctx.clearRect(0, 0, STRIP_W, STRIP_H);
 
-            if (frameOverlay.complete && frameOverlay.naturalWidth > 0) {
-                ctx.drawImage(frameOverlay, 0, 0, STRIP_W, STRIP_H);
+            // DIBUJAMOS EL DISEÑO/MARCO SELECCIONADO
+            const activeOverlay = bgDesigns[currentDesignIndex];
+            
+            if (activeOverlay.complete && activeOverlay.naturalWidth > 0) {
+                ctx.drawImage(activeOverlay, 0, 0, STRIP_W, STRIP_H);
             } else {
                 ctx.fillStyle = "#0a0a0a";
                 ctx.fillRect(0, 0, STRIP_W, STRIP_H);
             }
 
+            // DIBUJAMOS LAS FOTOS ENCIMA DEL MARCO
             frames.forEach((frame, index) => {
                 if (index < 3) {
                     const photoY = yPositions[index];
@@ -505,15 +597,15 @@
                 canvasFallback.style.display = 'block';
             }
 
-            // Generación del Código QR apuntando a la carpeta de Google Drive
+            // Generación del Código QR apuntando al sitio oficial
             const qrContainer = document.getElementById('qrcode');
             qrContainer.innerHTML = "";
 
             try {
                 new QRCode(qrContainer, {
-                    text: DRIVE_FOLDER_URL,
-                    width: 140,
-                    height: 140,
+                    text: OFFICIAL_WEBSITE_URL,
+                    width: 130,
+                    height: 130,
                     colorDark : "#000000",
                     colorLight : "#ffffff",
                     correctLevel : QRCode.CorrectLevel.H
