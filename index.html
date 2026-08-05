@@ -388,7 +388,10 @@
                         <button id="btn-blur" class="btn-outline" onclick="toggleBlurFondo()" style="padding: 10px; font-size: 0.85rem; flex-direction: row; gap: 5px; width: 100%;">
                             ✨ Activar Desenfoque de Fondo
                         </button>
-                        
+                        <!-- ESPACIO PARA PEGAR EL BOTÓN DE GUARDADO -->
+<button id="btn-guardar-drive" class="btn-glow" onclick="guardarEnDrive()" style="margin-top: 10px; background: #4CAF50; color: white;">
+    💾 Guardar en Drive
+</button>
                         <div id="qrcode" style="margin-top: 10px;"></div>
                         <p style="font-size: 0.8rem; color: var(--text-muted); text-align:center; margin-top: -5px;">Escanea el QR para visitar nuestro sitio web</p>
                         
@@ -858,6 +861,78 @@
             document.getElementById('btn-start').parentElement.style.display = 'flex';
             statusText.innerText = 'Ponte listo, son 3 fotos seguidas';
         }
+
+function reiniciarTotem() {
+            if (animId) cancelAnimationFrame(animId);
+            document.getElementById('sec-result').style.display = 'none';
+            document.getElementById('sec-camera').style.display = 'flex';
+            document.getElementById('btn-start').parentElement.style.display = 'flex';
+            statusText.innerText = 'Ponte listo, son 3 fotos seguidas';
+        }
+
+        // ---> AQUÍ PEGASTE EL CÓDIGO NUEVO <---
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyK_Mhlj7Bc7F-Ig8aJjTiAYlzFIYSIQoze0FJ19uoPf2-s2H_jDO5I3aEkMXAT_IksSg/exec";
+
+        async function guardarEnDrive() {
+            const btnGuardar = document.getElementById('btn-guardar-drive');
+            const textoOriginal = btnGuardar.innerText;
+            
+            // Cambiamos el texto para que el usuario sepa que está cargando
+            btnGuardar.innerText = "⏳ Guardando...";
+            btnGuardar.disabled = true;
+
+            // Pausamos la animación momentáneamente para extraer un frame nítido
+            armarTiraFrameEstatico(0);
+            
+            // Convertimos el canvas a Base64
+            const imageDataUrl = canvasMain.toDataURL('image/png', 1.0);
+
+            try {
+                const respuesta = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8', 
+                    },
+                    body: JSON.stringify({
+                        image: imageDataUrl,
+                        mimeType: 'image/png'
+                    })
+                });
+
+                const resultado = await respuesta.json();
+
+                if (resultado.status === "success") {
+                    btnGuardar.innerText = "✅ ¡Guardado!";
+                    btnGuardar.style.background = "#2E7D32"; 
+                    
+                    const qrContainer = document.getElementById('qrcode');
+                    qrContainer.innerHTML = "";
+                    new QRCode(qrContainer, {
+                        text: resultado.fileUrl, 
+                        width: 130,
+                        height: 130,
+                        colorDark : "#000000",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.H
+                    });
+                    
+                } else {
+                    alert("Hubo un problema al guardar: " + resultado.message);
+                    btnGuardar.innerText = textoOriginal;
+                    btnGuardar.disabled = false;
+                }
+            } catch (error) {
+                console.error("Error al conectar con Drive:", error);
+                alert("Fallo de conexión. Revisa tu internet.");
+                btnGuardar.innerText = textoOriginal;
+                btnGuardar.disabled = false;
+            }
+        }
+        // ---> HASTA AQUÍ LLEGA EL CÓDIGO NUEVO <---
+
+    </script>
+</body>
+</html>
     </script>
 </body>
 </html>
