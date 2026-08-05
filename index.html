@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELEGIDOS - Tótem Fotográfico</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@700;900&family=Inter:wght@300;400;700;900&family=Playfair+Display:ital,wght@0,900;1,700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #000000; 
+            --card-bg: rgba(15, 15, 15, 0.65); 
+            --card-border: rgba(227, 218, 201, 0.2); 
+            --text-main: #E3DAC9; 
+            --text-muted: #9c978e;
+            --accent-color: #D5C7A3; 
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        .site-bg-image {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000 85%);
+            z-index: -4;
+        }
+
+        header {
+            margin-top: 25px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .mixed-title {
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            color: var(--text-main);
+            text-shadow: 0 0 20px rgba(227, 218, 201, 0.3);
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+
+        .mixed-title span { display: inline-block; }
+        .l1 { font-family: 'Cinzel', serif; font-weight: 700; }
+        .l2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.1em; transform: translateY(-5px); }
+        .l3 { font-family: 'Playfair Display', serif; font-style: italic; }
+        .l4 { font-family: 'Inter', sans-serif; font-weight: 900; }
+        .l5 { font-family: 'Cinzel', serif; font-weight: 900; transform: translateY(5px); }
+        .l6 { font-family: 'Playfair Display', serif; font-weight: 900; }
+        .l7 { font-family: 'Inter', sans-serif; font-weight: 300; }
+        .l8 { font-family: 'Bebas Neue', sans-serif; font-size: 1.1em; }
+
+        .main-container {
+            width: 100%;
+            max-width: 1000px;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            flex-grow: 1;
+            z-index: 5;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+            width: 100%;
+            text-align: center;
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .camera-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            aspect-ratio: 16 / 10;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid rgba(227, 218, 201, 0.2);
+            margin: 0 auto;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        .countdown-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center;
+            font-size: 8rem; font-weight: 900; font-family: 'Bebas Neue', sans-serif;
+            color: #fff; text-shadow: 0 0 20px var(--accent-color);
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        }
+
+        .results-container {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        .strip-box {
+            position: relative;
+            width: 280px;
+            aspect-ratio: 600 / 1560;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.15);
+            background: #000;
+        }
+
+        .strip-preview-img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .qr-section {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            align-items: center;
+            background: rgba(0,0,0,0.5);
+            padding: 30px;
+            border-radius: 18px;
+            border: 1px solid rgba(227, 218, 201, 0.15);
+        }
+
+        #qrcode {
+            background: #fff;
+            padding: 12px;
+            border-radius: 10px;
+        }
+
+        .btn-glow {
+            background: var(--accent-color);
+            color: #000;
+            font-size: 1.1rem;
+            font-weight: 700;
+            padding: 14px 35px;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(213, 199, 163, 0.4);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+        
+        .btn-glow:hover {
+            background: #fff;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--accent-color);
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-outline:hover {
+            background: rgba(227, 218, 201, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="site-bg-image"></div>
+
+    <header>
+        <h1 class="mixed-title">
+            <span class="l1">E</span><span class="l2">L</span><span class="l3">E</span><span class="l4">G</span><span class="l5">I</span><span class="l6">D</span><span class="l7">O</span><span class="l8">S</span>
+        </h1>
+        <p style="color: var(--text-muted); margin-top: 5px; font-weight: 300;">PHOTO BOOTH</p>
+    </header>
+
+    <main class="main-container">
+        <div class="glass-card">
+            
+            <div id="sec-camera" class="section" style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
+                <div class="camera-wrapper">
+                    <video id="video" autoplay playsinline></video>
+                    <div id="countdown" class="countdown-overlay">3</div>
+                </div>
+                <h3 id="status-text" style="font-weight: 400;">Ponte listo, son 3 fotos seguidas</h3>
+                <button class="btn-glow" id="btn-start" onclick="iniciarSesion()">Tomar Fotos</button>
+            </div>
+
+            <div id="sec-result" class="section">
+                <div class="results-container">
+                    
+                    <div class="strip-box" id="strip-box">
+                        <img id="strip-image" class="strip-preview-img" src="" alt="Tira 600x1560 px">
+                        <canvas id="canvas-fallback" style="width: 100%; height: auto; display: none;"></canvas>
+                    </div>
+                    
+                    <div class="qr-section">
+                        <h3 style="color: var(--accent-color);">¡Tus fotos están listas!</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">Escanea para acceder a la carpeta</p>
+                        <div id="qrcode"></div>
+                        
+                        <a id="btn-download" download="Elegidos_PhotoBooth.png" class="btn-glow" style="text-decoration: none;">
+                            Descargar Imagen
+                        </a>
+                        
+                        <button class="btn-outline" onclick="reiniciarTotem()">Tomar otras fotos</button>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <canvas id="canvas-main" width="600" height="1560" style="display: none;"></canvas>
+
+    <script>
+        const frameOverlay = new Image();
+        frameOverlay.src = "elegidosfotodis.png"; 
+
+        const video = document.getElementById('video');
+        const canvasMain = document.getElementById('canvas-main');
+        const ctx = canvasMain.getContext('2d');
+        const countdownEl = document.getElementById('countdown');
+        const statusText = document.getElementById('status-text');
+        
+        let frames = [];
+        let stream = null;
+
+        async function iniciarCamara() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: { ideal: 1280 }, height: { ideal: 960 } } 
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                statusText.innerHTML = "<span style='color:#ff6b6b;'>Error de cámara. Por favor permite los permisos.</span>";
+            }
+        }
+
+        window.addEventListener('load', iniciarCamara);
+
+        async function iniciarSesion() {
+            document.getElementById('btn-start').style.display = 'none';
+            frames = [];
+            
+            for (let i = 1; i <= 3; i++) {
+                statusText.innerText = `Foto ${i} de 3...`;
+                await hacerCuentaRegresiva();
+                capturarFrame();
+            }
+
+            armarTiraFinal();
+        }
+
+        function hacerCuentaRegresiva() {
+            return new Promise((resolve) => {
+                let contador = 3;
+                countdownEl.style.opacity = '1';
+                countdownEl.innerText = contador;
+                
+                const intervalo = setInterval(() => {
+                    contador--;
+                    if (contador > 0) {
+                        countdownEl.innerText = contador;
+                    } else {
+                        clearInterval(intervalo);
+                        countdownEl.style.opacity = '0';
+                        document.querySelector('.camera-wrapper').style.background = '#fff';
+                        video.style.opacity = '0.2';
+                        setTimeout(() => {
+                            document.querySelector('.camera-wrapper').style.background = '#000';
+                            video.style.opacity = '1';
+                            resolve();
+                        }, 150);
+                    }
+                }, 1000);
+            });
+        }
+
+        function capturarFrame() {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = video.videoWidth || 1280;
+            tempCanvas.height = video.videoHeight || 960;
+            const tCtx = tempCanvas.getContext('2d');
+            
+            tCtx.translate(tempCanvas.width, 0);
+            tCtx.scale(-1, 1);
+            tCtx.drawImage(video, 0, 0);
+            
+            frames.push(tempCanvas);
+        }
+
+        function armarTiraFinal() {
+            const STRIP_W = 600;
+            const STRIP_H = 1560;
+            
+            const PHOTO_W = 560;
+            const PHOTO_H = 350; 
+            const PHOTO_X = 20; 
+            const CORNER_RADIUS = 16; 
+
+            // --- ALINEACIÓN VERTICAL ---
+            // Ajustado a 155px (+35px adicionales solicitados)
+            const TOP_MARGIN = 155; 
+            const SPACING = 35;    // Separación entre fotos
+
+            const yPositions = [
+                TOP_MARGIN,                             // Foto 1: Y = 155px
+                TOP_MARGIN + PHOTO_H + SPACING,          // Foto 2: Y = 540px
+                TOP_MARGIN + (PHOTO_H + SPACING) * 2     // Foto 3: Y = 925px
+            ];
+
+            canvasMain.width = STRIP_W;
+            canvasMain.height = STRIP_H;
+
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.clearRect(0, 0, STRIP_W, STRIP_H);
+
+            // 1. DIBUJAR MARCO O FONDO
+            if (frameOverlay.complete && frameOverlay.naturalWidth > 0) {
+                ctx.drawImage(frameOverlay, 0, 0, STRIP_W, STRIP_H);
+            } else {
+                ctx.fillStyle = "#0a0a0a";
+                ctx.fillRect(0, 0, STRIP_W, STRIP_H);
+            }
+
+            // 2. DIBUJAR LAS 3 FOTOS
+            frames.forEach((frame, index) => {
+                if (index < 3) {
+                    const photoY = yPositions[index];
+                    dibujarFotoCover(frame, PHOTO_X, photoY, PHOTO_W, PHOTO_H, CORNER_RADIUS);
+                }
+            });
+
+            mostrarPantallaResultados();
+        }
+
+        function dibujarFotoCover(img, dx, dy, dw, dh, radius) {
+            const imgW = img.width;
+            const imgH = img.height;
+            
+            const targetRatio = dw / dh; // 560 / 350 = 1.6
+            const imgRatio = imgW / imgH;
+            
+            let sx, sy, sw, sh;
+            
+            if (imgRatio > targetRatio) {
+                sh = imgH;
+                sw = imgH * targetRatio;
+                sx = (imgW - sw) / 2;
+                sy = 0;
+            } else {
+                sw = imgW;
+                sh = imgW / targetRatio;
+                sx = 0;
+                sy = (imgH - sh) / 2;
+            }
+
+            ctx.save();
+            
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(dx, dy, dw, dh, radius);
+            } else {
+                ctx.moveTo(dx + radius, dy);
+                ctx.arcTo(dx + dw, dy, dx + dw, dy + dh, radius);
+                ctx.arcTo(dx + dw, dy + dh, dx, dy + dh, radius);
+                ctx.arcTo(dx, dy + dh, dx, dy, radius);
+                ctx.arcTo(dx, dy, dx + dw, dy, radius);
+            }
+            ctx.closePath();
+            ctx.clip();
+
+            ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+            
+            ctx.restore();
+        }
+
+        function mostrarPantallaResultados() {
+            document.getElementById('sec-camera').style.display = 'none';
+            document.getElementById('sec-result').style.display = 'flex';
+
+            const imgElement = document.getElementById('strip-image');
+            const canvasFallback = document.getElementById('canvas-fallback');
+
+            try {
+                const imgData = canvasMain.toDataURL('image/png', 1.0);
+                imgElement.src = imgData;
+                imgElement.style.display = 'block';
+                canvasFallback.style.display = 'none';
+                document.getElementById('btn-download').href = imgData;
+            } catch (error) {
+                canvasFallback.width = canvasMain.width;
+                canvasFallback.height = canvasMain.height;
+                const fCtx = canvasFallback.getContext('2d');
+                fCtx.drawImage(canvasMain, 0, 0);
+
+                imgElement.style.display = 'none';
+                canvasFallback.style.display = 'block';
+
+                const btnDl = document.getElementById('btn-download');
+                btnDl.innerText = "Clic derecho > Guardar como";
+                btnDl.style.fontSize = "0.85rem";
+            }
+
+            try {
+                document.getElementById('qrcode').innerHTML = ""; 
+                new QRCode(document.getElementById("qrcode"), {
+                    text: "https://drive.google.com/drive/folders/1bYgIZadCZKVpcoVIT1Pi_gDtv9Jka49m?usp=sharing",
+                    width: 140,
+                    height: 140,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            } catch(e) {}
+        }
+
+        function reiniciarTotem() {
+            document.getElementById('sec-result').style.display = 'none';
+            document.getElementById('sec-camera').style.display = 'flex';
+            document.getElementById('btn-start').style.display = 'block';
+            statusText.innerText = 'Ponte listo, son 3 fotos seguidas';
+        }
+    </script>
+</body>
+</html>
