@@ -36,10 +36,68 @@
             overflow-x: hidden;
         }
 
+        /* --- FONDO FOTO5 Y EFECTO GLASS IPHONE --- */
         .site-bg-image {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: radial-gradient(circle at center, #1a1a1a 0%, #000 85%);
+            position: fixed; 
+            top: -5%; left: -5%; 
+            width: 110vw; height: 110vh; /* Más grande para ocultar bordes del blur */
+            background: url('foto5.jpg') center/cover no-repeat;
+            filter: blur(8px);
+            z-index: -5;
+        }
+
+        .glass-bg-overlay {
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100vw; height: 100vh;
+            background: rgba(20, 20, 20, 0.45);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             z-index: -4;
+        }
+
+        /* --- GALERÍAS LATERALES --- */
+        .sidebar {
+            position: fixed; 
+            top: 0; bottom: 0; 
+            width: 140px;
+            overflow: hidden; 
+            z-index: 1; 
+            pointer-events: none;
+            display: none; /* Se activa cuando cargan las fotos */
+        }
+        
+        .sidebar-left { left: 30px; }
+        .sidebar-right { right: 30px; }
+
+        .sidebar-track {
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px;
+            width: 100%;
+        }
+
+        .sidebar-track img {
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.6);
+            border: 1px solid rgba(227, 218, 201, 0.3);
+            object-fit: cover;
+            opacity: 0.85;
+        }
+
+        @keyframes scrollUpAnim {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50%); }
+        }
+
+        @keyframes scrollDownAnim {
+            0% { transform: translateY(-50%); }
+            100% { transform: translateY(0); }
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar { display: none !important; } /* Ocultar en pantallas chicas para no estorbar la tarjeta */
         }
 
         header {
@@ -71,16 +129,17 @@
             display: flex;
             justify-content: center;
             flex-grow: 1;
-            z-index: 5;
+            z-index: 5; /* Asegura que esté por encima de los laterales */
         }
 
         .glass-card {
             background: var(--card-bg);
             backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             border: 1px solid var(--card-border);
             border-radius: 24px;
             padding: 30px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
             width: 100%;
             text-align: center;
         }
@@ -343,6 +402,14 @@
 <body>
 
     <div class="site-bg-image"></div>
+    <div class="glass-bg-overlay"></div>
+
+    <div class="sidebar sidebar-left" id="sidebar-left-container">
+        <div class="sidebar-track" id="track-left"></div>
+    </div>
+    <div class="sidebar sidebar-right" id="sidebar-right-container">
+        <div class="sidebar-track" id="track-right"></div>
+    </div>
 
     <header>
         <h1 class="mixed-title" id="animated-title">
@@ -362,14 +429,12 @@
                 </div>
                 <h3 id="status-text" style="font-weight: 400;">Ponte listo, son 3 fotos seguidas</h3>
                 
-                <!-- GALERÍA DE FOTOS RECIENTES -->
                 <div id="galeria-recientes-container" style="width: 100%; max-width: 600px; margin-top: 15px; display: none;">
                     <h4 style="color: var(--accent-color); font-size: 0.95rem; margin-bottom: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
                         ✨ Fotos recientes de los invitados
                     </h4>
                     <div id="galeria-recientes" style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: thin;">
-                        <!-- Aquí se cargarán dinámicamente las fotos de Drive -->
-                    </div>
+                        </div>
                 </div>
 
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; width: 100%;">
@@ -625,7 +690,7 @@
         }
 
         // ==========================================
-        // GALERÍA DE FOTOS DESDE DRIVE
+        // GALERÍA DE FOTOS DESDE DRIVE + LATERALES
         // ==========================================
         async function cargarFotosRecientes() {
             const contenedor = document.getElementById('galeria-recientes');
@@ -636,6 +701,8 @@
                 const resultado = await respuesta.json();
 
                 if (resultado.status === "success" && resultado.fotos && resultado.fotos.length > 0) {
+                    
+                    // Llenar galería inferior original
                     contenedor.innerHTML = "";
                     resultado.fotos.forEach(foto => {
                         const card = document.createElement('div');
@@ -651,10 +718,47 @@
                         contenedor.appendChild(card);
                     });
                     contenedorPadre.style.display = 'block';
+
+                    // Llenar las barras laterales
+                    document.getElementById('sidebar-left-container').style.display = 'block';
+                    document.getElementById('sidebar-right-container').style.display = 'block';
+                    
+                    crearTrackSidebar(resultado.fotos, 'track-left', 'scrollDownAnim');
+                    crearTrackSidebar(resultado.fotos, 'track-right', 'scrollUpAnim');
                 }
             } catch (error) {
                 console.log("No se pudieron cargar las fotos recientes:", error);
             }
+        }
+
+        function crearTrackSidebar(fotos, trackId, animacion) {
+            const track = document.getElementById(trackId);
+            let processedFotos = [];
+            let lastFotoUrl = null;
+            
+            // Crear una lista de 15 a 20 items garantizando variedad y sin dobles inmediatos
+            for(let i = 0; i < 20; i++) {
+                let randomFoto;
+                let intentos = 0;
+                do {
+                    randomFoto = fotos[Math.floor(Math.random() * fotos.length)];
+                    intentos++;
+                } while(fotos.length > 1 && randomFoto.url === lastFotoUrl && intentos < 10);
+                
+                processedFotos.push(randomFoto);
+                lastFotoUrl = randomFoto.url;
+            }
+
+            // Generador del set HTML
+            const crearHTMLSet = () => {
+                return processedFotos.map(f => `<img src="${f.thumbnail}" alt="Preview" loading="lazy">`).join('');
+            };
+
+            // Duplicamos el contenido (2 sets) para crear el loop infinito con CSS Translate 0 a -50%
+            track.innerHTML = crearHTMLSet() + crearHTMLSet();
+            
+            // Asignar la animación definida en CSS
+            track.style.animation = `${animacion} 45s linear infinite`;
         }
 
         window.addEventListener('load', () => {
