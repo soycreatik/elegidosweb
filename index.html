@@ -151,13 +151,13 @@
         .qr-section {
             display: flex;
             flex-direction: column;
-            gap: 18px;
+            gap: 15px;
             align-items: center;
             background: rgba(0,0,0,0.5);
             padding: 30px;
             border-radius: 18px;
             border: 1px solid rgba(227, 218, 201, 0.15);
-            max-width: 280px;
+            max-width: 320px;
         }
 
         #qrcode {
@@ -171,20 +171,52 @@
             justify-content: center;
         }
 
+        .instructions-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px dashed rgba(227, 218, 201, 0.4);
+            border-radius: 12px;
+            padding: 15px;
+            width: 100%;
+            text-align: left;
+        }
+
+        .instructions-box p {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        
+        .instructions-box p:last-child {
+            margin-bottom: 0;
+        }
+
         .btn-glow {
             background: var(--accent-color);
             color: #000;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 700;
-            padding: 14px 35px;
+            padding: 14px 20px;
             border-radius: 50px;
             border: none;
             cursor: pointer;
             box-shadow: 0 0 20px rgba(213, 199, 163, 0.4);
             transition: all 0.3s ease;
             text-transform: uppercase;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1.2;
         }
         
+        .btn-glow span {
+            font-size: 0.75rem;
+            font-weight: 400;
+            opacity: 0.8;
+            text-transform: none;
+        }
+
         .btn-glow:hover {
             background: #fff;
             box-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
@@ -195,11 +227,22 @@
             background: transparent;
             color: var(--text-main);
             border: 1px solid var(--accent-color);
-            padding: 10px 25px;
+            padding: 12px 25px;
             border-radius: 50px;
             font-size: 0.95rem;
             cursor: pointer;
             transition: all 0.3s;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1.2;
+        }
+        .btn-outline span {
+            font-size: 0.75rem;
+            font-weight: 400;
+            opacity: 0.8;
+            text-transform: none;
         }
         .btn-outline:hover {
             background: rgba(227, 218, 201, 0.1);
@@ -226,7 +269,17 @@
                     <div id="countdown" class="countdown-overlay">3</div>
                 </div>
                 <h3 id="status-text" style="font-weight: 400;">Ponte listo, son 3 fotos seguidas</h3>
-                <button class="btn-glow" id="btn-start" onclick="iniciarSesion()">Tomar Fotos</button>
+                
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; width: 100%;">
+                    <button class="btn-glow" id="btn-start" onclick="iniciarSesion()" style="width: auto; padding: 14px 40px; justify-content: center;">
+                        Tomar Fotos
+                    </button>
+                    
+                    <button class="btn-outline" onclick="window.open('https://elegidosori.vercel.app/', '_blank')" style="width: auto; padding: 14px 30px;">
+                        Sitio Web Oficial
+                        <span>ELEGIDOS - Plataforma Creativa</span>
+                    </button>
+                </div>
             </div>
 
             <div id="sec-result" class="section">
@@ -239,15 +292,23 @@
                     
                     <div class="qr-section">
                         <h3 style="color: var(--accent-color); text-align:center;">¡Tus fotos están listas!</h3>
-                        <p style="font-size: 0.85rem; color: var(--text-muted); text-align:center;">Escanea el QR para ir a la carpeta de Drive</p>
                         
                         <div id="qrcode"></div>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); text-align:center; margin-top: -5px;">Escanea el QR para ir a la carpeta de Drive</p>
                         
-                        <button id="btn-download" class="btn-glow" style="font-size: 1rem; padding: 12px 20px; width: 100%;">
-                            Guardar Imagen
+                        <div class="instructions-box">
+                            <p>📱 <b>En celular:</b> Mantén presionada la fotografía de la izquierda y selecciona "Descargar imagen".</p>
+                            <p>💻 <b>En PC:</b> Haz clic derecho sobre la fotografía y selecciona "Guardar imagen como...".</p>
+                        </div>
+                        
+                        <button class="btn-glow" onclick="window.open('https://elegidosori.vercel.app/', '_blank')">
+                            Sitio Web Oficial
+                            <span>ELEGIDOS - Plataforma Creativa</span>
                         </button>
                         
-                        <button class="btn-outline" onclick="reiniciarTotem()" style="width: 100%;">Tomar otras fotos</button>
+                        <button class="btn-outline" onclick="reiniciarTotem()">
+                            Tomar otras fotos
+                        </button>
                     </div>
 
                 </div>
@@ -287,7 +348,8 @@
         window.addEventListener('load', iniciarCamara);
 
         async function iniciarSesion() {
-            document.getElementById('btn-start').style.display = 'none';
+            // Ocultamos ambos botones al iniciar
+            document.getElementById('btn-start').parentElement.style.display = 'none';
             frames = [];
             
             for (let i = 1; i <= 3; i++) {
@@ -420,16 +482,6 @@
             ctx.restore();
         }
 
-        function descargarFotoDirectamente() {
-            const link = document.createElement('a');
-            link.download = `foto_elegidos_${Date.now()}.png`;
-            link.href = canvasMain.toDataURL('image/png', 1.0);
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
         function mostrarPantallaResultados() {
             document.getElementById('sec-camera').style.display = 'none';
             document.getElementById('sec-result').style.display = 'flex';
@@ -442,12 +494,6 @@
                 imgElement.src = imgDataUrl;
                 imgElement.style.display = 'block';
                 canvasFallback.style.display = 'none';
-                
-                const btnDownload = document.getElementById('btn-download');
-                btnDownload.onclick = function(e) {
-                    e.preventDefault();
-                    descargarFotoDirectamente();
-                };
 
             } catch (error) {
                 canvasFallback.width = canvasMain.width;
@@ -480,7 +526,7 @@
         function reiniciarTotem() {
             document.getElementById('sec-result').style.display = 'none';
             document.getElementById('sec-camera').style.display = 'flex';
-            document.getElementById('btn-start').style.display = 'block';
+            document.getElementById('btn-start').parentElement.style.display = 'flex';
             statusText.innerText = 'Ponte listo, son 3 fotos seguidas';
         }
     </script>
