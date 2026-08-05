@@ -173,14 +173,13 @@
             box-shadow: 0 15px 40px rgba(213, 199, 163, 0.4);
         }
 
-        /* Capa superpuesta para el efecto de desenfoque */
         .blur-overlay {
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
             filter: blur(8px);
             -webkit-mask-image: radial-gradient(ellipse at center, transparent 35%, black 80%);
-            pointer-events: none; /* Permite clics a través del canvas */
+            pointer-events: none; 
             display: none;
             z-index: 10;
         }
@@ -197,7 +196,6 @@
             max-width: 320px;
         }
 
-        /* ESTILOS PARA LOS BOTONES DEL SELECTOR DE DISEÑO */
         .design-btn {
             background: transparent;
             color: var(--text-muted);
@@ -312,6 +310,34 @@
             color: #000;
             font-weight: bold;
         }
+
+        /* --- ESTILOS DE LA GALERÍA --- */
+        #galeria-recientes::-webkit-scrollbar {
+            height: 6px;
+        }
+        #galeria-recientes::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 10px;
+        }
+        .foto-reciente-card {
+            min-width: 110px;
+            height: 160px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(227, 218, 201, 0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .foto-reciente-card:hover {
+            transform: scale(1.05);
+        }
+        .foto-reciente-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
     </style>
 </head>
 <body>
@@ -336,6 +362,16 @@
                 </div>
                 <h3 id="status-text" style="font-weight: 400;">Ponte listo, son 3 fotos seguidas</h3>
                 
+                <!-- GALERÍA DE FOTOS RECIENTES -->
+                <div id="galeria-recientes-container" style="width: 100%; max-width: 600px; margin-top: 15px; display: none;">
+                    <h4 style="color: var(--accent-color); font-size: 0.95rem; margin-bottom: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                        ✨ Fotos recientes de los invitados
+                    </h4>
+                    <div id="galeria-recientes" style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: thin;">
+                        <!-- Aquí se cargarán dinámicamente las fotos de Drive -->
+                    </div>
+                </div>
+
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; width: 100%;">
                     <button class="btn-glow" id="btn-start" onclick="iniciarSesion()" style="width: auto; padding: 14px 40px; justify-content: center;">
                         Tomar Fotos
@@ -388,10 +424,11 @@
                         <button id="btn-blur" class="btn-outline" onclick="toggleBlurFondo()" style="padding: 10px; font-size: 0.85rem; flex-direction: row; gap: 5px; width: 100%;">
                             ✨ Activar Desenfoque de Fondo
                         </button>
-                        <!-- ESPACIO PARA PEGAR EL BOTÓN DE GUARDADO -->
-<button id="btn-guardar-drive" class="btn-glow" onclick="guardarEnDrive()" style="margin-top: 10px; background: #4CAF50; color: white;">
-    💾 Guardar en Drive
-</button>
+                        
+                        <button id="btn-guardar-drive" class="btn-glow" onclick="guardarEnDrive()" style="margin-top: 10px; background: #4CAF50; color: white;">
+                            💾 Guardar en Drive
+                        </button>
+                        
                         <div id="qrcode" style="margin-top: 10px;"></div>
                         <p style="font-size: 0.8rem; color: var(--text-muted); text-align:center; margin-top: -5px;">Escanea el QR para visitar nuestro sitio web</p>
                         
@@ -414,6 +451,7 @@
 
     <script>
         const OFFICIAL_WEBSITE_URL = "https://elegidosori.vercel.app/";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyK_Mhlj7Bc7F-Ig8aJjTiAYlzFIYSIQoze0FJ19uoPf2-s2H_jDO5I3aEkMXAT_IksSg/exec";
         
         // ==========================================
         // CARGA DE 3 DISEÑOS
@@ -432,21 +470,19 @@
         const statusText = document.getElementById('status-text');
         const gridGuide = document.getElementById('grid-guide'); 
         
-        let frames = []; // Ahora guarda [rafaga1, rafaga2, rafaga3]
+        let frames = []; 
         let stream = null;
         let audioCtx; 
         let intentosGrupo = 0;
 
-        // Variables de Animación y Estado
         let animId = null;
         let playbackIndex = 0;
         let lastDrawTime = 0;
-        const FPS_INTERVAL = 150; // Velocidad del GIF
+        const FPS_INTERVAL = 150; 
 
         let blurActive = false;
-        let isAnimated = true; // Variable para controlar si es GIF o Foto estática
+        let isAnimated = true; 
 
-        // Medidas base del diseño
         const STRIP_W = 600;
         const STRIP_H = 1560;
         const PHOTO_W = 560;
@@ -463,7 +499,7 @@
         ];
 
         // ==========================================
-        // LÓGICA DE RETOMA DE FOTO (RETAKE)
+        // LÓGICA DE RETOMA DE FOTO
         // ==========================================
         document.getElementById('strip-box').addEventListener('click', function(e) {
             if (frames.length < 3) return; 
@@ -481,13 +517,12 @@
         });
 
         async function iniciarRetake(index) {
-            if (animId) cancelAnimationFrame(animId); // Pausar animación actual
+            if (animId) cancelAnimationFrame(animId); 
 
             document.getElementById('sec-result').style.display = 'none';
             document.getElementById('sec-camera').style.display = 'flex';
             document.getElementById('btn-start').parentElement.style.display = 'none';
             
-            // Sumar intento
             intentosGrupo++;
             actualizarContadorUI();
             
@@ -500,7 +535,6 @@
 
             gridGuide.style.opacity = '0';
             
-            // Reiniciar estado y reanudar visualización
             setModoVisualizacion('gif');
             iniciarAnimacionTira();
             mostrarPantallaResultados();
@@ -511,27 +545,22 @@
         }
 
         // ==========================================
-        // FUNCIONES DE CONTROL DE MODO (GIF / FOTO)
+        // FUNCIONES DE CONTROL DE MODO
         // ==========================================
         function setModoVisualizacion(modo) {
             isAnimated = (modo === 'gif');
             
-            // Actualizar apariencia de los botones
             document.getElementById('btn-modo-gif').classList.toggle('active', isAnimated);
             document.getElementById('btn-modo-foto').classList.toggle('active', !isAnimated);
             
             const imgStatic = document.getElementById('strip-image-static');
             
             if (!isAnimated) {
-                // Modo Foto Estática: Pausar en el mejor frame (índice 0)
                 armarTiraFrameEstatico(0);
                 actualizarCanvasDisplays();
-                
-                // Generar la imagen para que sea fácil descargar en celular manteniendo pulsado
                 imgStatic.src = canvasMain.toDataURL('image/jpeg', 1.0);
                 imgStatic.style.display = 'block';
             } else {
-                // Modo GIF
                 imgStatic.style.display = 'none';
             }
         }
@@ -595,9 +624,43 @@
             }
         }
 
+        // ==========================================
+        // GALERÍA DE FOTOS DESDE DRIVE
+        // ==========================================
+        async function cargarFotosRecientes() {
+            const contenedor = document.getElementById('galeria-recientes');
+            const contenedorPadre = document.getElementById('galeria-recientes-container');
+            
+            try {
+                const respuesta = await fetch(SCRIPT_URL);
+                const resultado = await respuesta.json();
+
+                if (resultado.status === "success" && resultado.fotos && resultado.fotos.length > 0) {
+                    contenedor.innerHTML = "";
+                    resultado.fotos.forEach(foto => {
+                        const card = document.createElement('div');
+                        card.className = 'foto-reciente-card';
+                        card.onclick = () => window.open(foto.url, '_blank');
+                        
+                        const img = document.createElement('img');
+                        img.src = foto.thumbnail;
+                        img.loading = "lazy";
+                        img.alt = "Foto de evento";
+                        
+                        card.appendChild(img);
+                        contenedor.appendChild(card);
+                    });
+                    contenedorPadre.style.display = 'block';
+                }
+            } catch (error) {
+                console.log("No se pudieron cargar las fotos recientes:", error);
+            }
+        }
+
         window.addEventListener('load', () => {
             iniciarCamara();
             animarLetras(); 
+            cargarFotosRecientes(); 
         });
 
         async function iniciarSesion() {
@@ -606,7 +669,7 @@
             intentosGrupo = 0;
             actualizarContadorUI();
             cambiarDiseno(0, false); 
-            setModoVisualizacion('gif'); // Por defecto iniciar como GIF
+            setModoVisualizacion('gif'); 
             
             gridGuide.style.opacity = '1';
             
@@ -646,7 +709,6 @@
                         countdownEl.style.opacity = '0';
                         playBeep(880, 0.3); 
                         
-                        // Efecto Flash
                         document.querySelector('.camera-wrapper').style.background = '#fff';
                         video.style.opacity = '0.2';
                         setTimeout(() => {
@@ -659,7 +721,6 @@
             });
         }
 
-        // CAPTURA UNA RÁFAGA DE 6 FRAMES EN LUGAR DE UNA SOLA FOTO (EFECTO GIF)
         async function capturarRafaga() {
             return new Promise((resolve) => {
                 let rafagaLocal = [];
@@ -678,7 +739,7 @@
                     rafagaLocal.push(tempCanvas);
                     contadorRafaga++;
                     
-                    if (contadorRafaga >= 6) { // 6 frames por cada pose
+                    if (contadorRafaga >= 6) { 
                         clearInterval(intervaloRafaga);
                         resolve(rafagaLocal);
                     }
@@ -693,7 +754,6 @@
             document.getElementById('btn-diseno-2').classList.remove('active');
             document.getElementById(`btn-diseno-${index}`).classList.add('active');
 
-            // Si está en modo foto estática, forzar la actualización para mostrar el nuevo diseño de inmediato
             if (reRender && frames.length === 3 && !isAnimated) {
                 setModoVisualizacion('foto');
             }
@@ -714,7 +774,6 @@
                 btn.innerHTML = "✨ Activar Desenfoque de Fondo";
             }
             
-            // Refrescar inmediatamente si estamos en modo foto
             if (frames.length === 3 && !isAnimated) {
                 setModoVisualizacion('foto');
             }
@@ -730,7 +789,6 @@
         }
 
         function loopAnimacion(timestamp) {
-            // Solo redibujar y animar si estamos en modo GIF
             if (isAnimated) {
                 if (timestamp - lastDrawTime > FPS_INTERVAL) {
                     lastDrawTime = timestamp;
@@ -739,11 +797,9 @@
                     playbackIndex++;
                 }
             }
-            // Mantenemos el ciclo activo para poder reanudar rápido si tocan "Modo GIF" de nuevo
             animId = requestAnimationFrame(loopAnimacion);
         }
 
-        // Transfiere el buffer principal a los Canvas Visibles (Normal y Blur)
         function actualizarCanvasDisplays() {
             const cDisp = document.getElementById('canvas-display');
             const cBlur = document.getElementById('canvas-display-blur');
@@ -782,7 +838,6 @@
                 }
             });
 
-            // --- ESTAMPA DE FECHA Y UBICACIÓN ---
             const meses = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
             const fechaActual = new Date();
             const estampaTexto = `${meses[fechaActual.getMonth()]} ${fechaActual.getFullYear()} - EL SALVADOR`;
@@ -862,16 +917,6 @@
             statusText.innerText = 'Ponte listo, son 3 fotos seguidas';
         }
 
-function reiniciarTotem() {
-            if (animId) cancelAnimationFrame(animId);
-            document.getElementById('sec-result').style.display = 'none';
-            document.getElementById('sec-camera').style.display = 'flex';
-            document.getElementById('btn-start').parentElement.style.display = 'flex';
-            statusText.innerText = 'Ponte listo, son 3 fotos seguidas';
-        }
-
-       const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyK_Mhlj7Bc7F-Ig8aJjTiAYlzFIYSIQoze0FJ19uoPf2-s2H_jDO5I3aEkMXAT_IksSg/exec";
-
         async function guardarEnDrive() {
             const btnGuardar = document.getElementById('btn-guardar-drive');
             const textoOriginal = btnGuardar.innerText;
@@ -900,7 +945,6 @@ function reiniciarTotem() {
                     btnGuardar.innerText = "✅ ¡Guardado!";
                     btnGuardar.style.background = "#2E7D32"; 
                     
-                    // 1. Cambia el QR para abrir la foto
                     const qrContainer = document.getElementById('qrcode');
                     qrContainer.innerHTML = "";
                     new QRCode(qrContainer, {
@@ -912,7 +956,6 @@ function reiniciarTotem() {
                         correctLevel : QRCode.CorrectLevel.H
                     });
                     
-                    // 2. Muestra el LINK EXACTO debajo del QR
                     let linkElement = document.getElementById('link-drive-directo');
                     if (!linkElement) {
                         linkElement = document.createElement('a');
@@ -936,10 +979,6 @@ function reiniciarTotem() {
                 btnGuardar.disabled = false;
             }
         }
-
-    </script>
-</body>
-</html>
     </script>
 </body>
 </html>
