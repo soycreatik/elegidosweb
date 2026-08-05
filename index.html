@@ -870,21 +870,16 @@ function reiniciarTotem() {
             statusText.innerText = 'Ponte listo, son 3 fotos seguidas';
         }
 
-        // ---> AQUÍ PEGASTE EL CÓDIGO NUEVO <---
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyK_Mhlj7Bc7F-Ig8aJjTiAYlzFIYSIQoze0FJ19uoPf2-s2H_jDO5I3aEkMXAT_IksSg/exec";
+       const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyK_Mhlj7Bc7F-Ig8aJjTiAYlzFIYSIQoze0FJ19uoPf2-s2H_jDO5I3aEkMXAT_IksSg/exec";
 
         async function guardarEnDrive() {
             const btnGuardar = document.getElementById('btn-guardar-drive');
             const textoOriginal = btnGuardar.innerText;
             
-            // Cambiamos el texto para que el usuario sepa que está cargando
             btnGuardar.innerText = "⏳ Guardando...";
             btnGuardar.disabled = true;
 
-            // Pausamos la animación momentáneamente para extraer un frame nítido
             armarTiraFrameEstatico(0);
-            
-            // Convertimos el canvas a Base64
             const imageDataUrl = canvasMain.toDataURL('image/png', 1.0);
 
             try {
@@ -905,6 +900,7 @@ function reiniciarTotem() {
                     btnGuardar.innerText = "✅ ¡Guardado!";
                     btnGuardar.style.background = "#2E7D32"; 
                     
+                    // 1. Cambia el QR para abrir la foto
                     const qrContainer = document.getElementById('qrcode');
                     qrContainer.innerHTML = "";
                     new QRCode(qrContainer, {
@@ -916,6 +912,18 @@ function reiniciarTotem() {
                         correctLevel : QRCode.CorrectLevel.H
                     });
                     
+                    // 2. Muestra el LINK EXACTO debajo del QR
+                    let linkElement = document.getElementById('link-drive-directo');
+                    if (!linkElement) {
+                        linkElement = document.createElement('a');
+                        linkElement.id = 'link-drive-directo';
+                        linkElement.target = '_blank';
+                        linkElement.style.cssText = 'color: var(--accent-color); font-size: 0.85rem; text-decoration: underline; word-break: break-all; margin-top: 10px; display: block; text-align: center; font-weight: bold;';
+                        qrContainer.parentNode.insertBefore(linkElement, qrContainer.nextSibling);
+                    }
+                    linkElement.href = resultado.fileUrl;
+                    linkElement.innerText = "🔗 Ver / Abrir foto en Drive";
+
                 } else {
                     alert("Hubo un problema al guardar: " + resultado.message);
                     btnGuardar.innerText = textoOriginal;
@@ -928,7 +936,6 @@ function reiniciarTotem() {
                 btnGuardar.disabled = false;
             }
         }
-        // ---> HASTA AQUÍ LLEGA EL CÓDIGO NUEVO <---
 
     </script>
 </body>
