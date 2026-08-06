@@ -38,11 +38,11 @@
             overflow-x: hidden;
         }
 
-        /* --- FONDO FOTO5 Y EFECTO GLASS IPHONE RESTAURADO --- */
+        /* --- FONDO FOTO5 Y EFECTO GLASS IPHONE --- */
         .site-bg-image {
             position: fixed; 
             top: -5%; left: -5%; 
-            width: 110vw; height: 110vh; /* Más grande para ocultar bordes del blur */
+            width: 110vw; height: 110vh; 
             background: url('foto5.jpg') center/cover no-repeat;
             filter: blur(8px);
             z-index: -5;
@@ -58,7 +58,7 @@
             z-index: -4;
         }
 
-        /* --- GALERÍAS LATERALES RESTAURADAS --- */
+        /* --- GALERÍAS LATERALES --- */
         .sidebar {
             position: fixed; 
             top: 0; bottom: 0; 
@@ -402,7 +402,7 @@
                         ✨ Fotos recientes de los invitados
                     </h4>
                     <div id="galeria-recientes" style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: thin;">
-                        </div>
+                    </div>
                 </div>
 
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; width: 100%;">
@@ -463,7 +463,7 @@
                         </button>
                         
                         <div id="qrcode" style="margin-top: 10px;"></div>
-                        <p style="font-size: 0.8rem; color: var(--text-muted); text-align:center; margin-top: -5px;">Escanea el QR para descargar</p>
+                        <p id="qr-instruccion" style="font-size: 0.8rem; color: var(--text-muted); text-align:center; margin-top: -5px;">Guarda para generar el QR de descarga</p>
                         
                         <button class="btn-glow" onclick="window.open('https://elegidosori.vercel.app/', '_blank')">
                             Visita el sitio web
@@ -515,7 +515,6 @@
 
         let blurActive = false;
         let isAnimated = true; 
-        let isAutoSaving = false; // Bloqueador para evitar repeticiones rápidas
 
         const STRIP_W = 600;
         const STRIP_H = 1560;
@@ -575,43 +574,6 @@
         }
 
         // ==========================================
-        // AUTO-GUARDADO DEL DISEÑO ANTERIOR
-        // ==========================================
-        // Guarda exactamente el estado de la UI *antes* de aplicar el nuevo cambio
-        async function ejecutarAutoGuardado() {
-            if (isAutoSaving) return;
-            isAutoSaving = true;
-
-            const btnGuardar = document.getElementById('btn-guardar-drive');
-            const originalText = btnGuardar.innerText;
-            
-            // Indicador visual de que estamos respaldando el estado anterior
-            btnGuardar.innerText = "⏳ Resguardando anterior...";
-            btnGuardar.disabled = true;
-
-            try {
-                // Obtenemos la imagen/gif tal como está configurada en este exacto momento
-                const data = await obtenerImagenActual();
-
-                // Hacemos el envío de forma asíncrona por detrás para no congelar la app
-                fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ image: data.url, mimeType: data.mime })
-                }).catch(e => console.error("Error en auto-guardado", e));
-
-            } catch (error) {
-                console.error("Fallo al obtener imagen para auto-guardado", error);
-            }
-
-            // Liberamos de inmediato el botón para que la UI fluya
-            btnGuardar.innerText = originalText;
-            btnGuardar.disabled = false;
-            isAutoSaving = false;
-        }
-
-
-        // ==========================================
         // LÓGICA DE INTERFAZ Y RETOMA
         // ==========================================
         document.getElementById('strip-box').addEventListener('click', async function(e) {
@@ -632,10 +594,11 @@
         async function iniciarRetake(index) {
             if (animId) cancelAnimationFrame(animId); 
 
-            // Auto-guardamos la secuencia COMPLETA ANTES de sobreescribir la foto
-            if (frames.length === 3) {
-                await ejecutarAutoGuardado();
-            }
+            // REINICIAR EL QR Y EL LINK YA QUE LA FOTO VA A CAMBIAR
+            document.getElementById('qrcode').innerHTML = "";
+            document.getElementById('qr-instruccion').innerText = "Guarda para generar el QR de descarga";
+            const linkDrive = document.getElementById('link-drive-directo');
+            if(linkDrive) linkDrive.remove();
 
             document.getElementById('sec-result').style.display = 'none';
             document.getElementById('sec-camera').style.display = 'flex';
@@ -656,20 +619,14 @@
             iniciarAnimacionTira();
             mostrarPantallaResultados();
             
-            // Si el modo estático está seleccionado, lo forzamos a actualizar visualmente
             if (!isAnimated) {
                 actualizarEstatico();
             }
         }
 
-        async function setModoVisualizacion(modo) {
+        function setModoVisualizacion(modo) {
             const isNowAnimated = (modo === 'gif');
             if (isAnimated === isNowAnimated) return;
-
-            // Guardar el estado anterior antes de cambiar de formato
-            if (frames.length === 3) {
-                await ejecutarAutoGuardado();
-            }
 
             isAnimated = isNowAnimated;
             document.getElementById('btn-modo-gif').classList.toggle('active', isAnimated);
@@ -682,13 +639,8 @@
             }
         }
 
-        async function cambiarDiseno(index) {
+        function cambiarDiseno(index) {
             if (currentDesignIndex === index) return;
-
-            // Guardar el diseño actual en Drive ANTES de aplicar el nuevo
-            if (frames.length === 3) {
-                await ejecutarAutoGuardado();
-            }
 
             currentDesignIndex = index;
             document.getElementById('btn-diseno-0').classList.remove('active');
@@ -701,12 +653,7 @@
             }
         }
 
-        async function toggleBlurFondo() {
-            // Guardar el diseño actual en Drive ANTES de aplicar el desenfoque
-            if (frames.length === 3) {
-                await ejecutarAutoGuardado();
-            }
-
+        function toggleBlurFondo() {
             blurActive = !blurActive;
             const blurCanvas = document.getElementById('canvas-display-blur');
             const btn = document.getElementById('btn-blur');
@@ -762,7 +709,6 @@
                     });
                     contenedorPadre.style.display = 'block';
 
-                    // Llenar las barras laterales
                     document.getElementById('sidebar-left-container').style.display = 'block';
                     document.getElementById('sidebar-right-container').style.display = 'block';
                     
@@ -824,7 +770,7 @@
             frames = [];
             intentosGrupo = 0;
             actualizarContadorUI();
-            cambiarDiseno(0); // Reiniciar a diseño 0 silenciosamente
+            cambiarDiseno(0);
             setModoVisualizacion('gif'); 
             
             gridGuide.style.opacity = '1';
@@ -1057,26 +1003,21 @@
         function mostrarPantallaResultados() {
             document.getElementById('sec-camera').style.display = 'none';
             document.getElementById('sec-result').style.display = 'flex';
-
-            const qrContainer = document.getElementById('qrcode');
-            if (qrContainer.innerHTML === "") {
-                try {
-                    new QRCode(qrContainer, {
-                        text: OFFICIAL_WEBSITE_URL,
-                        width: 130,
-                        height: 130,
-                        colorDark : "#000000",
-                        colorLight : "#ffffff",
-                        correctLevel : QRCode.CorrectLevel.H
-                    });
-                } catch(e) {
-                    console.error("Error al generar el QR", e);
-                }
-            }
+            
+            // Dejamos el contenedor del QR vacío e instruimos al usuario a guardar
+            document.getElementById('qrcode').innerHTML = "";
+            document.getElementById('qr-instruccion').innerText = "Guarda para generar el QR de descarga";
         }
 
         function reiniciarTotem() {
             if (animId) cancelAnimationFrame(animId);
+
+            // REINICIAR EL QR Y EL LINK
+            document.getElementById('qrcode').innerHTML = "";
+            document.getElementById('qr-instruccion').innerText = "Guarda para generar el QR de descarga";
+            const linkDrive = document.getElementById('link-drive-directo');
+            if(linkDrive) linkDrive.remove();
+
             document.getElementById('sec-result').style.display = 'none';
             document.getElementById('sec-camera').style.display = 'flex';
             document.getElementById('btn-start').parentElement.style.display = 'flex';
@@ -1084,7 +1025,7 @@
         }
 
         // ==========================================
-        // GUARDADO MANUAL Y FINAL
+        // GUARDADO MANUAL EN DRIVE
         // ==========================================
         async function guardarEnDriveManual() {
             const btnGuardar = document.getElementById('btn-guardar-drive');
@@ -1132,6 +1073,8 @@
                         colorLight : "#ffffff",
                         correctLevel : QRCode.CorrectLevel.H
                     });
+
+                    document.getElementById('qr-instruccion').innerText = "Escanea el QR para descargar";
                     
                     let linkElement = document.getElementById('link-drive-directo');
                     if (!linkElement) {
