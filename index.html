@@ -947,7 +947,7 @@
                 }
             });
 
-            // Logo sobre la primera foto
+            // logo sobre la primera foto
             if (logoElegidos.complete && logoElegidos.naturalWidth > 0) {
                 const anchoLogo1 = 150; 
                 const altoLogo1 = (logoElegidos.naturalHeight / logoElegidos.naturalWidth) * anchoLogo1;
@@ -956,7 +956,7 @@
                 ctx.drawImage(logoElegidos, xLogo1, yLogo1, anchoLogo1, altoLogo1);
             }
 
-            // Logo sobre la última foto
+            // logo sobre la ultima foto
             if (logoCreatik.complete && logoCreatik.naturalWidth > 0) {
                 const anchoLogo2 = 400; 
                 const altoLogo2 = (logoCreatik.naturalHeight / logoCreatik.naturalWidth) * anchoLogo2;
@@ -965,16 +965,30 @@
                 ctx.drawImage(logoCreatik, xLogo2, yLogo2, anchoLogo2, altoLogo2);
             }
 
-            const meses = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
             const fechaActual = new Date();
-            const estampaTexto = `${meses[fechaActual.getMonth()]} ${fechaActual.getFullYear()} - EL SALVADOR`;
+            const dias = fechaActual.getDate();
+            const mesesTexto = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+            const anio = fechaActual.getFullYear();
+            const estampaFecha = `${dias} de ${mesesTexto[fechaActual.getMonth()]} de ${anio}`;
+            const estampaRedes = "@elegidos_sv";
             
             ctx.save();
-            ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+            ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
             ctx.font = "300 18px 'Inter', sans-serif";
             ctx.textAlign = "center";
             ctx.letterSpacing = "2px";
-            ctx.fillText(estampaTexto, STRIP_W / 2, STRIP_H - 45);
+            
+            let posy = STRIP_H - 80;
+            if (logoCreatik.complete && logoCreatik.naturalWidth > 0) {
+                const anchologo = 400; 
+                const altologo = (logoCreatik.naturalHeight / logoCreatik.naturalWidth) * anchologo;
+                const ylogo = (yPositions[2] + PHOTO_H) - (altologo / 2); 
+                posy = ylogo + altologo + 40; 
+            }
+            
+            ctx.fillText(estampaFecha.toUpperCase(), STRIP_W / 2, posy);
+            ctx.font = "700 20px 'Inter', sans-serif";
+            ctx.fillText(estampaRedes, STRIP_W / 2, posy + 30);
             ctx.restore();
         }
 
