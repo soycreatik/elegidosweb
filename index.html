@@ -7,6 +7,8 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@700;900&family=Inter:wght@300;400;700;900&family=Playfair+Display:ital,wght@0,900;1,700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.3.2/gifshot.min.js"></script>
 
     <style>
         :root {
@@ -36,68 +38,10 @@
             overflow-x: hidden;
         }
 
-        /* --- FONDO FOTO5 Y EFECTO GLASS IPHONE --- */
         .site-bg-image {
-            position: fixed; 
-            top: -5%; left: -5%; 
-            width: 110vw; height: 110vh; /* Más grande para ocultar bordes del blur */
-            background: url('foto5.jpg') center/cover no-repeat;
-            filter: blur(8px);
-            z-index: -5;
-        }
-
-        .glass-bg-overlay {
-            position: fixed; 
-            top: 0; left: 0; 
-            width: 100vw; height: 100vh;
-            background: rgba(20, 20, 20, 0.45);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000 85%);
             z-index: -4;
-        }
-
-        /* --- GALERÍAS LATERALES --- */
-        .sidebar {
-            position: fixed; 
-            top: 0; bottom: 0; 
-            width: 140px;
-            overflow: hidden; 
-            z-index: 1; 
-            pointer-events: none;
-            display: none; /* Se activa cuando cargan las fotos */
-        }
-        
-        .sidebar-left { left: 30px; }
-        .sidebar-right { right: 30px; }
-
-        .sidebar-track {
-            display: flex; 
-            flex-direction: column; 
-            gap: 20px;
-            width: 100%;
-        }
-
-        .sidebar-track img {
-            width: 100%;
-            border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.6);
-            border: 1px solid rgba(227, 218, 201, 0.3);
-            object-fit: cover;
-            opacity: 0.85;
-        }
-
-        @keyframes scrollUpAnim {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-50%); }
-        }
-
-        @keyframes scrollDownAnim {
-            0% { transform: translateY(-50%); }
-            100% { transform: translateY(0); }
-        }
-
-        @media (max-width: 1024px) {
-            .sidebar { display: none !important; } /* Ocultar en pantallas chicas para no estorbar la tarjeta */
         }
 
         header {
@@ -129,17 +73,16 @@
             display: flex;
             justify-content: center;
             flex-grow: 1;
-            z-index: 5; /* Asegura que esté por encima de los laterales */
+            z-index: 5;
         }
 
         .glass-card {
             background: var(--card-bg);
             backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
             border: 1px solid var(--card-border);
             border-radius: 24px;
             padding: 30px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
             width: 100%;
             text-align: center;
         }
@@ -402,14 +345,6 @@
 <body>
 
     <div class="site-bg-image"></div>
-    <div class="glass-bg-overlay"></div>
-
-    <div class="sidebar sidebar-left" id="sidebar-left-container">
-        <div class="sidebar-track" id="track-left"></div>
-    </div>
-    <div class="sidebar sidebar-right" id="sidebar-right-container">
-        <div class="sidebar-track" id="track-right"></div>
-    </div>
 
     <header>
         <h1 class="mixed-title" id="animated-title">
@@ -563,6 +498,16 @@
             TOP_MARGIN + (PHOTO_H + SPACING) * 2     
         ];
 
+        // NUEVO: Temporizador para auto-guardado
+        let autoSaveTimer = null;
+
+        function triggerAutoSave() {
+            if (autoSaveTimer) clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => {
+                guardarEnDrive(true);
+            }, 1500); // 1.5s de espera tras la última acción
+        }
+
         // ==========================================
         // LÓGICA DE RETOMA DE FOTO
         // ==========================================
@@ -603,6 +548,8 @@
             setModoVisualizacion('gif');
             iniciarAnimacionTira();
             mostrarPantallaResultados();
+            // NUEVO: Auto-guardar tras retomar foto
+            triggerAutoSave();
         }
 
         function actualizarContadorUI() {
@@ -628,6 +575,9 @@
             } else {
                 imgStatic.style.display = 'none';
             }
+            
+            // NUEVO: Auto-guardar tras cambiar formato
+            triggerAutoSave();
         }
 
         // ==========================================
@@ -690,7 +640,7 @@
         }
 
         // ==========================================
-        // GALERÍA DE FOTOS DESDE DRIVE + LATERALES
+        // GALERÍA DE FOTOS DESDE DRIVE
         // ==========================================
         async function cargarFotosRecientes() {
             const contenedor = document.getElementById('galeria-recientes');
@@ -701,8 +651,6 @@
                 const resultado = await respuesta.json();
 
                 if (resultado.status === "success" && resultado.fotos && resultado.fotos.length > 0) {
-                    
-                    // Llenar galería inferior original
                     contenedor.innerHTML = "";
                     resultado.fotos.forEach(foto => {
                         const card = document.createElement('div');
@@ -718,47 +666,10 @@
                         contenedor.appendChild(card);
                     });
                     contenedorPadre.style.display = 'block';
-
-                    // Llenar las barras laterales
-                    document.getElementById('sidebar-left-container').style.display = 'block';
-                    document.getElementById('sidebar-right-container').style.display = 'block';
-                    
-                    crearTrackSidebar(resultado.fotos, 'track-left', 'scrollDownAnim');
-                    crearTrackSidebar(resultado.fotos, 'track-right', 'scrollUpAnim');
                 }
             } catch (error) {
                 console.log("No se pudieron cargar las fotos recientes:", error);
             }
-        }
-
-        function crearTrackSidebar(fotos, trackId, animacion) {
-            const track = document.getElementById(trackId);
-            let processedFotos = [];
-            let lastFotoUrl = null;
-            
-            // Crear una lista de 15 a 20 items garantizando variedad y sin dobles inmediatos
-            for(let i = 0; i < 20; i++) {
-                let randomFoto;
-                let intentos = 0;
-                do {
-                    randomFoto = fotos[Math.floor(Math.random() * fotos.length)];
-                    intentos++;
-                } while(fotos.length > 1 && randomFoto.url === lastFotoUrl && intentos < 10);
-                
-                processedFotos.push(randomFoto);
-                lastFotoUrl = randomFoto.url;
-            }
-
-            // Generador del set HTML
-            const crearHTMLSet = () => {
-                return processedFotos.map(f => `<img src="${f.thumbnail}" alt="Preview" loading="lazy">`).join('');
-            };
-
-            // Duplicamos el contenido (2 sets) para crear el loop infinito con CSS Translate 0 a -50%
-            track.innerHTML = crearHTMLSet() + crearHTMLSet();
-            
-            // Asignar la animación definida en CSS
-            track.style.animation = `${animacion} 45s linear infinite`;
         }
 
         window.addEventListener('load', () => {
@@ -787,6 +698,8 @@
             gridGuide.style.opacity = '0';
             iniciarAnimacionTira();
             mostrarPantallaResultados();
+            // NUEVO: Auto-guardar tras tomar las fotos iniciales
+            triggerAutoSave();
         }
 
         function hacerCuentaRegresiva() {
@@ -861,6 +774,8 @@
             if (reRender && frames.length === 3 && !isAnimated) {
                 setModoVisualizacion('foto');
             }
+            // NUEVO: Auto-guardar tras cambiar marco
+            if(reRender) triggerAutoSave();
         }
 
         function toggleBlurFondo() {
@@ -881,6 +796,9 @@
             if (frames.length === 3 && !isAnimated) {
                 setModoVisualizacion('foto');
             }
+            
+            // NUEVO: Auto-guardar tras aplicar desenfoque
+            triggerAutoSave();
         }
 
         // ==========================================
@@ -1021,15 +939,78 @@
             statusText.innerText = 'Ponte listo, son 3 fotos seguidas';
         }
 
-        async function guardarEnDrive() {
+        // NUEVO: Lógica que procesa GIF para envíos a Drive
+        async function generarGIFBase64() {
+            return new Promise((resolve) => {
+                let imagesData = [];
+                let numFrames = (frames[0] && frames[0].length) ? frames[0].length : 6;
+                
+                for(let i = 0; i < numFrames; i++){
+                    armarTiraFrameEstatico(i);
+                    imagesData.push(canvasMain.toDataURL('image/jpeg', 0.9)); 
+                }
+                
+                armarTiraFrameEstatico(playbackIndex); // Restaurar estado
+
+                gifshot.createGIF({
+                    images: imagesData,
+                    gifWidth: STRIP_W,
+                    gifHeight: STRIP_H,
+                    interval: FPS_INTERVAL / 1000, 
+                    numWorkers: 2,
+                    sampleInterval: 10,
+                    progressCallback: function(captureProgress) {
+                        const btn = document.getElementById('btn-guardar-drive');
+                        if (btn.innerText.includes("Guardando") || btn.innerText.includes("Procesando")) {
+                            btn.innerText = `⏳ GIF: ${Math.round(captureProgress * 100)}%`;
+                        }
+                    }
+                }, function(obj) {
+                    if(!obj.error) {
+                        resolve(obj.image); 
+                    } else {
+                        console.error("Error al crear GIF", obj.error);
+                        resolve(null);
+                    }
+                });
+            });
+        }
+
+        // MODIFICADO: Capacidad de Autoguardado y Exportación en formato GIF / Estático.
+        async function guardarEnDrive(autoGuardado = false) {
             const btnGuardar = document.getElementById('btn-guardar-drive');
             const textoOriginal = btnGuardar.innerText;
             
-            btnGuardar.innerText = "⏳ Guardando...";
-            btnGuardar.disabled = true;
+            if (btnGuardar.disabled && !autoGuardado) return; // Evitar clicks dobles
 
-            armarTiraFrameEstatico(0);
-            const imageDataUrl = canvasMain.toDataURL('image/png', 1.0);
+            if (!autoGuardado) {
+                btnGuardar.innerText = "⏳ Procesando...";
+                btnGuardar.disabled = true;
+            } else {
+                btnGuardar.innerText = "⏳ Auto-guardando...";
+            }
+
+            let imageDataUrl;
+            let finalMimeType = 'image/png';
+
+            // Detectar automáticamente si es un GIF animado o foto estática
+            if (isAnimated) {
+                imageDataUrl = await generarGIFBase64();
+                finalMimeType = 'image/gif';
+            } else {
+                armarTiraFrameEstatico(0);
+                imageDataUrl = canvasMain.toDataURL('image/png', 1.0);
+                finalMimeType = 'image/png';
+            }
+
+            if (!imageDataUrl) {
+                if (!autoGuardado) {
+                    alert("Hubo un error al procesar el archivo gráfico.");
+                    btnGuardar.innerText = textoOriginal;
+                    btnGuardar.disabled = false;
+                }
+                return;
+            }
 
             try {
                 const respuesta = await fetch(SCRIPT_URL, {
@@ -1039,15 +1020,21 @@
                     },
                     body: JSON.stringify({
                         image: imageDataUrl,
-                        mimeType: 'image/png'
+                        mimeType: finalMimeType
                     })
                 });
 
                 const resultado = await respuesta.json();
 
                 if (resultado.status === "success") {
-                    btnGuardar.innerText = "✅ ¡Guardado!";
+                    btnGuardar.innerText = autoGuardado ? "✅ ¡Auto-guardado exitoso!" : "✅ ¡Guardado en Drive!";
                     btnGuardar.style.background = "#2E7D32"; 
+                    
+                    setTimeout(() => { 
+                        btnGuardar.innerText = "💾 Guardar en Drive"; 
+                        btnGuardar.style.background = ""; 
+                        btnGuardar.disabled = false;
+                    }, 3000);
                     
                     const qrContainer = document.getElementById('qrcode');
                     qrContainer.innerHTML = "";
@@ -1072,13 +1059,14 @@
                     linkElement.innerText = "🔗 Ver / Abrir foto en Drive";
 
                 } else {
-                    alert("Hubo un problema al guardar: " + resultado.message);
+                    console.error("Hubo un problema al guardar:", resultado.message);
+                    if (!autoGuardado) { alert("Hubo un problema al guardar: " + resultado.message); }
                     btnGuardar.innerText = textoOriginal;
                     btnGuardar.disabled = false;
                 }
             } catch (error) {
                 console.error("Error al conectar con Drive:", error);
-                alert("Fallo de conexión. Revisa tu internet.");
+                if (!autoGuardado) { alert("Fallo de conexión. Revisa tu internet."); }
                 btnGuardar.innerText = textoOriginal;
                 btnGuardar.disabled = false;
             }
