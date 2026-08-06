@@ -445,14 +445,7 @@
                             </div>
                         </div>
                         
-                        <div style="width: 100%; border-top: 1px dashed rgba(227, 218, 201, 0.2); border-bottom: 1px dashed rgba(227, 218, 201, 0.2); padding: 12px 0;">
-                            <p style="font-size: 0.85rem; color: var(--text-muted); text-align:center; margin-bottom: 8px;">2. Selecciona un marco decorativo:</p>
-                            <div style="display: flex; gap: 8px; justify-content: space-between; width: 100%;">
-                                <button id="btn-diseno-0" class="design-btn active" onclick="cambiarDiseno(0)">Diseño 1</button>
-                                <button id="btn-diseno-1" class="design-btn" onclick="cambiarDiseno(1)">Diseño 2</button>
-                                <button id="btn-diseno-2" class="design-btn" onclick="cambiarDiseno(2)">Diseño 3</button>
-                            </div>
-                        </div>
+                        
 
                         <button id="btn-blur" class="btn-outline" onclick="toggleBlurFondo()" style="padding: 10px; font-size: 0.85rem; flex-direction: row; gap: 5px; width: 100%;">
                             ✨ Activar Desenfoque de Fondo
@@ -487,13 +480,17 @@
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyK_Mhlj7Bc7F-Ig8aJjTiAYlzFIYSIQoze0FJ19uoPf2-s2H_jDO5I3aEkMXAT_IksSg/exec";
         
         // ==========================================
-        // CARGA DE 3 DISEÑOS
+        // CARGA DE DISEÑO Y LOGOS
         // ==========================================
-        const bgDesigns = [new Image(), new Image(), new Image()];
+        const bgDesigns = [new Image()];
         bgDesigns[0].src = "elegidosfotodis.png";   
-        bgDesigns[1].src = "elegidosfotodis1.png";  
-        bgDesigns[2].src = "elegidosfotodis2.png";  
         
+        const logoElegidos = new Image();
+        logoElegidos.src = "ELEGIDOS VER.2 WHITE.png";
+        
+        const logoCreatik = new Image();
+        logoCreatik.src = "SOYCREATIK.png";
+       
         let currentDesignIndex = 0; 
         
         const video = document.getElementById('video');
@@ -933,9 +930,9 @@
             ctx.imageSmoothingQuality = 'high';
             ctx.clearRect(0, 0, STRIP_W, STRIP_H);
 
-            const activeOverlay = bgDesigns[currentDesignIndex];
+            const activeOverlay = bgDesigns[0];
             
-            if (activeOverlay.complete && activeOverlay.naturalWidth > 0) {
+            if (activeOverlay && activeOverlay.complete && activeOverlay.naturalWidth > 0) {
                 ctx.drawImage(activeOverlay, 0, 0, STRIP_W, STRIP_H);
             } else {
                 ctx.fillStyle = "#0a0a0a";
@@ -949,6 +946,24 @@
                     dibujarFotoCover(frameActual, PHOTO_X, photoY, PHOTO_W, PHOTO_H, CORNER_RADIUS);
                 }
             });
+
+            // Logo sobre la primera foto
+            if (logoElegidos.complete && logoElegidos.naturalWidth > 0) {
+                const anchoLogo1 = 150; 
+                const altoLogo1 = (logoElegidos.naturalHeight / logoElegidos.naturalWidth) * anchoLogo1;
+                const xLogo1 = (STRIP_W - anchoLogo1) / 2;
+                const yLogo1 = yPositions[0] - (altoLogo1 / 2); 
+                ctx.drawImage(logoElegidos, xLogo1, yLogo1, anchoLogo1, altoLogo1);
+            }
+
+            // Logo sobre la última foto
+            if (logoCreatik.complete && logoCreatik.naturalWidth > 0) {
+                const anchoLogo2 = 250; 
+                const altoLogo2 = (logoCreatik.naturalHeight / logoCreatik.naturalWidth) * anchoLogo2;
+                const xLogo2 = (STRIP_W - anchoLogo2) / 2;
+                const yLogo2 = (yPositions[2] + PHOTO_H) - (altoLogo2 / 2); 
+                ctx.drawImage(logoCreatik, xLogo2, yLogo2, anchoLogo2, altoLogo2);
+            }
 
             const meses = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
             const fechaActual = new Date();
